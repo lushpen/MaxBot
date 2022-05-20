@@ -12,7 +12,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "start": "node 1bo.js",
+    "start": "node max.js",
     "dev": "nodemon 1bo.js"
   },
   "author": "",
