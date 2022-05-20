@@ -13,7 +13,7 @@
   },
   "scripts": {
     "start": "node max.js",
-    "dev": "nodemon 1bo.js"
+    "dev": "nodemon max.js"
   },
   "author": "",
   "license": "ISC",
