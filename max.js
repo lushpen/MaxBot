@@ -156,11 +156,15 @@ bot.on("callback_query", async (ctx) => {
   if (callBackData == result && rightAnswers < maxQuestions) {
     await ctx.reply(`Молодець! Дай правильну відповідь ще на ${maxQuestions - rightAnswers} питань і отримаєш приз!`);
     rightAnswers++;
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id - 1);
     // повторний запуск тесту; 
     //для запуску з рендомними питаннями math(ctx, random())
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     math(ctx, random(action));
+   // ctx.deleteMessage(ctx.update.callback_query.message.message_id);
   }
   else if (callBackData == result && rightAnswers >= maxQuestions) {
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
     //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
