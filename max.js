@@ -16,22 +16,21 @@ const myKeyboard = {
     inline_keyboard: [
       [
         {
-          text: "Таблиця множення",
+          text: "Хочу множити",
           callback_data: "multi",
-        },
-        {
-          text: "Таблиця додавання",
-          callback_data: "sum",
-        },
-        {
-          text: "Я вже втомився :((",
-          callback_data: "exit",
-        }
-        // ,
-        // {
-        //   text: "Таблиця віднімання",
-        //   callback_data: "sub",
-        // },
+        }],
+      [{
+        text: "Хочу додавати",
+        callback_data: "sum",
+      }],
+      [{
+        text: "Таблиця віднімання",
+        callback_data: "sub",
+      }],
+      [{
+        text: "Я вже втомився :((",
+        callback_data: "exit",
+      }
         // {
         //   text: "Таблиця ділення",
         //   callback_data: "div",
@@ -42,10 +41,32 @@ const myKeyboard = {
 };
 function mixedKeyboard(result) {
   do {
-    c = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
-    d = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
-    e = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
-    f = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
+    switch (action) {
+      case "*":
+        c = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
+        d = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
+        e = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
+        f = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
+        break;
+      case "+":
+        c = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
+        d = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
+        e = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
+        f = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
+        break;
+      case "-":
+        c = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
+        d = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
+        e = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
+        f = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
+        break;
+      case "/":
+        c = Math.floor(Math.random() * 11) / Math.floor(Math.random() * 11);
+        d = Math.floor(Math.random() * 11) / Math.floor(Math.random() * 11);
+        e = Math.floor(Math.random() * 11) / Math.floor(Math.random() * 11);
+        f = Math.floor(Math.random() * 11) / Math.floor(Math.random() * 11);
+        break;
+    }
   }
   while (c == d || c == e || c == f || d == e || d == f || e == f || result == c || result == d || result == e || result == f);
   const answerKeyboard = {
@@ -141,7 +162,7 @@ bot.on("callback_query", async (ctx) => {
   }
   else if (callBackData == result && rightAnswers >= maxQuestions) {
     ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
-    //  const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
+    //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == 'success') {
