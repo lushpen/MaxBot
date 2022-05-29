@@ -32,12 +32,12 @@ const myKeyboard = {
           callback_data: "sub",
         },
       ],
-      [
-        {
-          text: "Здивуй мене :)",
-          callback_data: "impress",
-        },
-      ],
+      // [
+      //   {
+      //     text: "Здивуй мене :)",
+      //     callback_data: "impress",
+      //   },
+      // ],
       [
         {
           text: "Я вже втомився :((",
@@ -202,9 +202,9 @@ bot.on("callback_query", async (ctx) => {
     );
     rightAnswers++;
     ctx.deleteMessage(ctx.update.callback_query.message.message_id - 1);
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     // повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     math(ctx, random(action));
     // ctx.deleteMessage(ctx.update.callback_query.message.message_id);
   } else if (callBackData == result && rightAnswers >= maxQuestions) {
