@@ -49,16 +49,16 @@ function mixedKeyboard(result) {
         f = Math.floor(Math.random() * 11) * Math.floor(Math.random() * 11);
         break;
       case "+":
-        c = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
-        d = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
-        e = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
-        f = Math.floor(Math.random() * 11) + Math.floor(Math.random() * 11);
+        c = Math.floor(Math.random() * 21) + Math.floor(Math.random() * 21);
+        d = Math.floor(Math.random() * 21) + Math.floor(Math.random() * 21);
+        e = Math.floor(Math.random() * 21) + Math.floor(Math.random() * 21);
+        f = Math.floor(Math.random() * 21) + Math.floor(Math.random() * 21);
         break;
       case "-":
-        c = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
-        d = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
-        e = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
-        f = Math.abs(Math.floor(Math.random() * 11) - Math.floor(Math.random() * 11));
+        c = Math.abs(Math.floor(Math.random() * 21) - Math.floor(Math.random() * 21));
+        d = Math.abs(Math.floor(Math.random() * 21) - Math.floor(Math.random() * 21));
+        e = Math.abs(Math.floor(Math.random() * 21) - Math.floor(Math.random() * 21));
+        f = Math.abs(Math.floor(Math.random() * 21) - Math.floor(Math.random() * 21));
         break;
       case "/":
         c = Math.floor(Math.random() * 11) / Math.floor(Math.random() * 11);
@@ -100,6 +100,7 @@ function random(action) {
   if (!action) {
     var myArray = [
       "+",
+      "-",
       "*"
     ];
     var action = myArray[Math.floor(Math.random() * myArray.length)];
