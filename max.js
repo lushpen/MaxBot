@@ -34,6 +34,12 @@ const myKeyboard = {
       ],
       [
         {
+          text: "Здивуй мене :)",
+          callback_data: "impress",
+        },
+      ],
+      [
+        {
           text: "Я вже втомився :((",
           callback_data: "exit",
         },
@@ -178,6 +184,9 @@ bot.action("sub", (ctx) => {
 bot.action("div", (ctx) => {
   action = "/";
   math(ctx, action);
+});
+bot.action("impress", (ctx) => {
+  math(ctx, random());
 });
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
