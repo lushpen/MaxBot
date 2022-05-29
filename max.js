@@ -28,7 +28,7 @@ const myKeyboard = {
       ],
       [
         {
-          text: "Таблиця віднімання",
+          text: "Хочу віднімати",
           callback_data: "sub",
         },
       ],
