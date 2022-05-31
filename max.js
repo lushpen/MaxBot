@@ -169,7 +169,7 @@ function start(ctx) {
 }
 
 //start button
-bot.on("/start", (ctx) =>
+bot.action("/start", (ctx) =>
   ctx.reply(
     "Обери варіант",
     Markup.keyboard([["/start"], ["/exit"]])
