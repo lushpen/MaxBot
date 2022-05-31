@@ -11,6 +11,19 @@ let maxQuestions = 9;
 //       { agent: new HttpsProxyAgent(process.env.Proxy) }
 //   }, { polling: true });
 
+// //start button
+// bot.command("/start", (ctx) =>
+//   ctx.reply(
+//     "Обери варіант",
+//     Markup.keyboard([
+//       ["/start"],
+//       ["/exit"]
+//     ])
+//       .oneTime()
+//       .resize()
+//   )
+// );
+
 const myKeyboard = {
   reply_markup: {
     inline_keyboard: [
@@ -32,12 +45,12 @@ const myKeyboard = {
           callback_data: "sub",
         },
       ],
-      // [
-      //   {
-      //     text: "Здивуй мене :)",
-      //     callback_data: "impress",
-      //   },
-      // ],
+       [
+         {
+           text: "Здивуй мене :)",
+           callback_data: "impress",
+          },
+       ],
       [
         {
           text: "Я вже втомився :((",
@@ -129,7 +142,8 @@ function mixedKeyboard(result) {
   return answerKeyboard;
 }
 function random(action) {
-  if (!action) {
+  if (!action) 
+  {
     var myArray = ["+", "-", "*"];
     var action = myArray[Math.floor(Math.random() * myArray.length)];
   }
@@ -158,6 +172,7 @@ function math(ctx, action) {
     result = a - b;
   } else result = "ok";
   ctx.reply("Скільки буде " + a + action + b + "?", mixedKeyboard(result));
+ // console.log('a=',a,'b=',b,'result=',result);
 }
 function start(ctx) {
   rightAnswers = 0;
@@ -186,7 +201,9 @@ bot.action("div", (ctx) => {
   math(ctx, action);
 });
 bot.action("impress", (ctx) => {
-  math(ctx, random());
+  //console.log(ctx);
+  action=random();
+  math(ctx,action);
 });
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
@@ -194,6 +211,7 @@ bot.action("exit", (ctx) => {
 
 bot.on("callback_query", async (ctx) => {
   callBackData = ctx.update.callback_query.data;
+  //console.log(ctx.update.callback_query.data);
   if (callBackData == result && rightAnswers < maxQuestions) {
     await ctx.reply(
       `Молодець! Дай правильну відповідь ще на ${
@@ -206,11 +224,10 @@ bot.on("callback_query", async (ctx) => {
     // повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     math(ctx, random(action));
-    // ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-  } else if (callBackData == result && rightAnswers >= maxQuestions) {
+    } else if (callBackData == result && rightAnswers >= maxQuestions) {
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
-    //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
+   // const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
