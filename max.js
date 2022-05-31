@@ -11,19 +11,6 @@ let maxQuestions = 9;
 //       { agent: new HttpsProxyAgent(process.env.Proxy) }
 //   }, { polling: true });
 
-// //start button
-// bot.command("/start", (ctx) =>
-//   ctx.reply(
-//     "Обери варіант",
-//     Markup.keyboard([
-//       ["/start"],
-//       ["/exit"]
-//     ])
-//       .oneTime()
-//       .resize()
-//   )
-// );
-
 const myKeyboard = {
   reply_markup: {
     inline_keyboard: [
@@ -45,12 +32,12 @@ const myKeyboard = {
           callback_data: "sub",
         },
       ],
-       [
-         {
-           text: "Здивуй мене :)",
-           callback_data: "impress",
-          },
-       ],
+      [
+        {
+          text: "Здивуй мене :)",
+          callback_data: "impress",
+        },
+      ],
       [
         {
           text: "Я вже втомився :((",
@@ -142,8 +129,7 @@ function mixedKeyboard(result) {
   return answerKeyboard;
 }
 function random(action) {
-  if (!action) 
-  {
+  if (!action) {
     var myArray = ["+", "-", "*"];
     var action = myArray[Math.floor(Math.random() * myArray.length)];
   }
@@ -172,12 +158,29 @@ function math(ctx, action) {
     result = a - b;
   } else result = "ok";
   ctx.reply("Скільки буде " + a + action + b + "?", mixedKeyboard(result));
- // console.log('a=',a,'b=',b,'result=',result);
+  //console.log(ctx.update.callback_query.message.message_id);
+  if (ctx.update.callback_query.message.message_id)
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
+  // console.log('a=',a,'b=',b,'result=',result);
 }
 function start(ctx) {
   rightAnswers = 0;
   ctx.replyWithMarkdown(`Давай трохи пограємо?\nОбери варіант:`, myKeyboard);
 }
+
+//start button
+bot.on("/start", (ctx) =>
+  ctx.reply(
+    "Обери варіант",
+    Markup.keyboard([["/start"], ["/exit"]])
+      .oneTime()
+      .resize()
+  )
+);
+//exit button
+bot.hears("/exit", async (ctx) => {
+  ctx.reply("Гаразд! До зустрічі наступного разу!");
+});
 
 bot.command("start", async (ctx) => {
   await ctx.reply(`Вітаю, ${ctx.from.first_name}!`);
@@ -202,8 +205,8 @@ bot.action("div", (ctx) => {
 });
 bot.action("impress", (ctx) => {
   //console.log(ctx);
-  action=random();
-  math(ctx,action);
+  action = random();
+  math(ctx, action);
 });
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
@@ -219,15 +222,20 @@ bot.on("callback_query", async (ctx) => {
       } питань і отримаєш приз!`
     );
     rightAnswers++;
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id - 1);
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
+    if (ctx.update.callback_query.message.message_id + 1) {
+      setTimeout(
+        () =>
+          ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
+        5000
+      );
+    }
     // повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     math(ctx, random(action));
-    } else if (callBackData == result && rightAnswers >= maxQuestions) {
+  } else if (callBackData == result && rightAnswers >= maxQuestions) {
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
-   // const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
+    // const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
