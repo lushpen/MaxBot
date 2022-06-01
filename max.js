@@ -3,7 +3,7 @@ const fetch = require("node-fetch");
 const { Telegraf, Markup, Extra } = require("telegraf");
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 //const HttpsProxyAgent = require("https-proxy-agent");
-let a, b, c, d, e, f, result, callBackData, rightAnswers;
+let a, b, c, d, e, f, result, callbackData, rightAnswers;
 let maxQuestions = 9;
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
@@ -126,6 +126,7 @@ function mixedKeyboard(result) {
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
+  answerKeyboard.reply_markup.inline_keyboard[0][4] = { text: "?", callback_data: "cheat" };
   return answerKeyboard;
 }
 function random(action) {
@@ -157,34 +158,40 @@ function math(ctx, action) {
   } else if (action == "-") {
     result = a - b;
   } else result = "ok";
-  ctx.reply("Скільки буде " + a + action + b + "?", mixedKeyboard(result));
-  //console.log(ctx.update.callback_query.message.message_id);
+  ctx.reply(
+    "Скільки буде " + a + action + b + "?",
+    mixedKeyboard(result)
+  );
+  //   console.log(ctx.from);
+  bot.on("text", (ctx) => {
+    return ctx.reply(ctx.message.text);
+  });
   if (ctx.update.callback_query.message.message_id)
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-  // console.log('a=',a,'b=',b,'result=',result);
+  // console.log("a=", a, "b=", b, "result=", result);
 }
 function start(ctx) {
   rightAnswers = 0;
   ctx.replyWithMarkdown(`Давай трохи пограємо?\nОбери варіант:`, myKeyboard);
+  return ctx
 }
+bot.command("start", async (ctx) => {
+  await ctx.reply(`Вітаю, ${ctx.from.first_name}!`);
+  start(ctx);
+});
 
 //start button
-bot.action("/start", (ctx) =>
-  ctx.reply(
-    "Обери варіант",
+bot.command("inline", async (ctx) => {
+  await ctx.reply(`Вітаю, ${ctx.from.first_name}!`,
     Markup.keyboard([["/start"], ["/exit"]])
       .oneTime()
       .resize()
   )
+}
 );
 //exit button
 bot.hears("/exit", async (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
-});
-
-bot.command("start", async (ctx) => {
-  await ctx.reply(`Вітаю, ${ctx.from.first_name}!`);
-  start(ctx);
 });
 
 bot.action("multi", (ctx) => {
@@ -204,7 +211,6 @@ bot.action("div", (ctx) => {
   math(ctx, action);
 });
 bot.action("impress", (ctx) => {
-  //console.log(ctx);
   action = random();
   math(ctx, action);
 });
@@ -213,12 +219,13 @@ bot.action("exit", (ctx) => {
 });
 
 bot.on("callback_query", async (ctx) => {
-  callBackData = ctx.update.callback_query.data;
-  //console.log(ctx.update.callback_query.data);
-  if (callBackData == result && rightAnswers < maxQuestions) {
+  callbackData = ctx.update.callback_query.data;
+  if (
+    callbackData == result &&
+    rightAnswers < maxQuestions
+  ) {
     await ctx.reply(
-      `Молодець! Дай правильну відповідь ще на ${
-        maxQuestions - rightAnswers
+      `Молодець! Дай правильну відповідь ще на ${maxQuestions - rightAnswers
       } питань і отримаєш приз!`
     );
     rightAnswers++;
@@ -232,10 +239,11 @@ bot.on("callback_query", async (ctx) => {
     // повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     math(ctx, random(action));
-  } else if (callBackData == result && rightAnswers >= maxQuestions) {
+  } else if (callbackData == result &&
+    rightAnswers >= maxQuestions) {
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
-    // const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
+    //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
@@ -245,11 +253,18 @@ bot.on("callback_query", async (ctx) => {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
     start(ctx);
-  } else {
+  }else if (callbackData == "cheat" && rightAnswers>0) {
+    rightAnswers-=2;
+    ctx.reply(
+    "Правильна відповідь: " +result+
+    "\nКількість правильних відповідей зменшилася на 2.\n Лишилося :"
+    +rightAnswers)
+  }
+   else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
     await ctx.reply(
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-        rightAnswers
+      rightAnswers
     );
     start(ctx);
   }
