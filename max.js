@@ -3,7 +3,7 @@ const fetch = require("node-fetch");
 const { Telegraf, Markup, Extra } = require("telegraf");
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 //const HttpsProxyAgent = require("https-proxy-agent");
-let a, b, c, d, e, f, result, callbackData, rightAnswers;
+let result, callbackData, rightAnswers, cheat;
 let maxQuestions = 9;
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
@@ -126,13 +126,18 @@ function mixedKeyboard(result) {
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
-  answerKeyboard.reply_markup.inline_keyboard[0][4] = { text: "?", callback_data: "cheat" };
+  if (rightAnswers >= 2) {
+    answerKeyboard.reply_markup.inline_keyboard[0][4] = {
+      text: "?",
+      callback_data: "cheat",
+    };
+  } else delete answerKeyboard.reply_markup.inline_keyboard[0][4];
   return answerKeyboard;
 }
 function random(action) {
   if (!action) {
-    var myArray = ["+", "-", "*"];
-    var action = myArray[Math.floor(Math.random() * myArray.length)];
+    let myArray = ["+", "-", "*"];
+    action = myArray[Math.floor(Math.random() * myArray.length)];
   }
   return action;
 }
@@ -158,42 +163,40 @@ function math(ctx, action) {
   } else if (action == "-") {
     result = a - b;
   } else result = "ok";
-  ctx.reply(
-    "Скільки буде " + a + action + b + "?",
-    mixedKeyboard(result)
-  );
-  //   console.log(ctx.from);
-  bot.on("text", (ctx) => {
-    return ctx.reply(ctx.message.text);
-  });
+  ctx.reply("Скільки буде " + a + action + b + "?", mixedKeyboard(result));
   if (ctx.update.callback_query.message.message_id)
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-  // console.log("a=", a, "b=", b, "result=", result);
+  console.log("a=", a, "b=", b, "result=", result);
+  return result;
 }
 function start(ctx) {
+  cheat = 0;
   rightAnswers = 0;
-  ctx.replyWithMarkdown(`Давай трохи пограємо?\nОбери варіант:`, myKeyboard);
-  return ctx
+  return ctx.replyWithMarkdown(
+    `Давай трохи пограємо?\nОбери варіант:`,
+    myKeyboard
+  );
 }
-bot.command("start", async (ctx) => {
-  await ctx.reply(`Вітаю, ${ctx.from.first_name}!`);
-  start(ctx);
-});
-
 //start button
-bot.command("inline", async (ctx) => {
-  await ctx.reply(`Вітаю, ${ctx.from.first_name}!`,
-    Markup.keyboard([["/start"], ["/exit"]])
+bot.command("/start", async (ctx) => {
+  await ctx.reply(
+    `Вітаю, ${ctx.from.first_name}!`,
+    Markup.keyboard([["почали"], ["вихід"]])
       .oneTime()
       .resize()
-  )
-}
-);
-//exit button
-bot.hears("/exit", async (ctx) => {
+  );
+});
+//start
+bot.hears("почали", async (ctx) => {
+  await ctx.reply(
+    `Готовий практикуватися у математиці?\nПравила прості: \n10 прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі 10 питань отримаєш приз!`
+  );
+  start(ctx);
+});
+//exit button action
+bot.hears("вихід", async (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
-
 bot.action("multi", (ctx) => {
   action = "*";
   math(ctx, action);
@@ -220,12 +223,12 @@ bot.action("exit", (ctx) => {
 
 bot.on("callback_query", async (ctx) => {
   callbackData = ctx.update.callback_query.data;
-  if (
-    callbackData == result &&
-    rightAnswers < maxQuestions
-  ) {
+  console.log(result, callbackData, ctx.from.id);
+  // console.log(ctx.from.id.result);
+  if (callbackData == result && rightAnswers < maxQuestions) {
     await ctx.reply(
-      `Молодець! Дай правильну відповідь ще на ${maxQuestions - rightAnswers
+      `Молодець! Дай правильну відповідь ще на ${
+        maxQuestions - rightAnswers
       } питань і отримаєш приз!`
     );
     rightAnswers++;
@@ -239,10 +242,16 @@ bot.on("callback_query", async (ctx) => {
     // повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     math(ctx, random(action));
-  } else if (callbackData == result &&
-    rightAnswers >= maxQuestions) {
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-    ctx.reply("Молодець! Ти дуже гарно знаєш таблицю!!!\nТримай фото песика:)");
+  } else if (callbackData == result && rightAnswers >= maxQuestions) {
+    if (ctx.update.callback_query.message.message_id) {
+      setTimeout(
+        () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
+        1000
+      );
+    }
+    ctx.reply(
+      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
+    );
     //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
@@ -253,18 +262,20 @@ bot.on("callback_query", async (ctx) => {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
     start(ctx);
-  }else if (callbackData == "cheat" && rightAnswers>0) {
-    rightAnswers-=2;
+  } else if (callbackData == "cheat" && rightAnswers > 0) {
+    rightAnswers -= 2;
+    cheat++;
     ctx.reply(
-    "Правильна відповідь: " +result+
-    "\nКількість правильних відповідей зменшилася на 2.\n Лишилося :"
-    +rightAnswers)
-  }
-   else {
+      "Правильна відповідь: " +
+        result +
+        "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
+        rightAnswers
+    );
+  } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
     await ctx.reply(
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-      rightAnswers
+        rightAnswers
     );
     start(ctx);
   }
