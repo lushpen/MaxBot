@@ -1,6 +1,7 @@
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
-const url = "mongodb://localhost:27017/";
+const url = process.env.MONGODB_URI;
+//const url = "mongodb://localhost:27017/";
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const fetch = require("node-fetch");
 const { Telegraf, Markup, Extra } = require("telegraf");
