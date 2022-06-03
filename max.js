@@ -1,9 +1,13 @@
 require("dotenv").config();
+const MongoClient = require("mongodb").MongoClient;
+const url = "mongodb://localhost:27017/";
+const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const fetch = require("node-fetch");
 const { Telegraf, Markup, Extra } = require("telegraf");
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 //const HttpsProxyAgent = require("https-proxy-agent");
-let result, callbackData, rightAnswers, cheat;
+let userID = {};
+let result, callbackData, rightAnswers, cheat, bestResults;
 let maxQuestions = 9;
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
@@ -43,10 +47,10 @@ const myKeyboard = {
           text: "Я вже втомився :((",
           callback_data: "exit",
         },
-        // {
+        //[ {
         //   text: "Таблиця ділення",
         //   callback_data: "div",
-        // }
+        // }]
       ],
     ],
   },
@@ -134,6 +138,62 @@ function mixedKeyboard(result) {
   } else delete answerKeyboard.reply_markup.inline_keyboard[0][4];
   return answerKeyboard;
 }
+
+async function mongo(ctx, bestResults) {
+  try {
+    await mongoClient.connect();
+    const db = mongoClient.db("usersdb");
+    const collection = db.collection("users");
+    const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
+    //console.log(findUser[0].chatID);
+    //adding user to database
+    if (!findUser[0]) {
+      let user = {
+        chatID: ctx.from.id,
+        name: ctx.from.first_name,
+        score: bestResults,
+      };
+      const result = await collection.insertOne(user); //add user
+      //console.log(`user added to database`, result);
+    } else if (
+      (findUser[0].chatID == ctx.from.id && bestResults < findUser[0].score) ||
+      findUser[0].score === null
+    ) {
+      bestResults = findUser[0].score;
+    }
+    //console.log(findUser[0].score);
+    //console.log("bestres", bestResults);
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await mongoClient.close();
+  }
+  return new Promise(function (resolve) {
+    resolve(bestResults);
+  });
+}
+async function mongoWrite(ctx, bestResults) {
+  try {
+    await mongoClient.connect();
+    const db = mongoClient.db("usersdb");
+    const collection = db.collection("users");
+    const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
+    //console.log(`writebestres`, bestResults);
+    //console.log(findUser[0].chatID);
+    //adding user to database
+    const result = await collection.updateOne(
+      { score: findUser[0].score },
+      { $set: { score: bestResults } }
+    );
+    //console.log(result);
+    //findUser[0].score = bestResults;
+    //else bestResults = 0;
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await mongoClient.close();
+  }
+}
 function random(action) {
   if (!action) {
     let myArray = ["+", "-", "*"];
@@ -166,12 +226,29 @@ function math(ctx, action) {
   ctx.reply("Скільки буде " + a + action + b + "?", mixedKeyboard(result));
   if (ctx.update.callback_query.message.message_id)
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-  console.log("a=", a, "b=", b, "result=", result);
-  return result;
+  //console.log("a=", a, "b=", b, "result=", result);
+  userID = { ID: ctx.from.id, result: result };
+  return userID;
 }
-function start(ctx) {
+async function start(ctx) {
+  // userID = { ID: ctx.from.id, result: result };
+  // userID= result;
+  // console.log(userID);
+  // userID = {
+  //   result,
+  //   callbackData,
+  //   rightAnswers,
+  //   maxQuestions,
+  // };
+  //console.log(userID);
   cheat = 0;
   rightAnswers = 0;
+  bestResults = 0;
+  await mongo(ctx, bestResults).then(function (value) {
+    bestResults = value;
+  });
+  //await test;
+  //console.log(`externalbestres`, bestResults);
   return ctx.replyWithMarkdown(
     `Давай трохи пограємо?\nОбери варіант:`,
     myKeyboard
@@ -189,7 +266,11 @@ bot.command("/start", async (ctx) => {
 //start
 bot.hears("почали", async (ctx) => {
   await ctx.reply(
-    `Готовий практикуватися у математиці?\nПравила прості: \n10 прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі 10 питань отримаєш приз!`
+    `Готовий практикуватися у математиці?\nПравила прості: \n${
+      maxQuestions + 1
+    } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${
+      maxQuestions + 1
+    } питань отримаєш приз!`
   );
   start(ctx);
 });
@@ -223,10 +304,12 @@ bot.action("exit", (ctx) => {
 
 bot.on("callback_query", async (ctx) => {
   callbackData = ctx.update.callback_query.data;
-  console.log(result, callbackData, ctx.from.id);
-  // console.log(ctx.from.id.result);
-  if (callbackData == result && rightAnswers < maxQuestions) {
-    await ctx.reply(
+  console.log(userID);
+  //console.log(result, callbackData, ctx.from.id);
+  //console.log(ctx.from.id.result);
+  if (callbackData == userID.result && rightAnswers < maxQuestions) {
+    await ctx.telegram.sendMessage(
+      userID.ID,
       `Молодець! Дай правильну відповідь ще на ${
         maxQuestions - rightAnswers
       } питань і отримаєш приз!`
@@ -239,11 +322,14 @@ bot.on("callback_query", async (ctx) => {
         5000
       );
     }
-    // повторний запуск тесту;
+    //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     math(ctx, random(action));
   } else if (callbackData == result && rightAnswers >= maxQuestions) {
     if (ctx.update.callback_query.message.message_id) {
+      bestResults++;
+      //console.log(`top`, bestResults);
+      await mongoWrite(ctx, bestResults);
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
         1000
@@ -252,7 +338,9 @@ bot.on("callback_query", async (ctx) => {
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
-    //const response = await fetch("https://dog.ceo/api/breeds/image/random", { agent: new HttpsProxyAgent(process.env.Proxy) });
+    //const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //  agent: new HttpsProxyAgent(process.env.Proxy),
+    //});
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
@@ -266,7 +354,7 @@ bot.on("callback_query", async (ctx) => {
     rightAnswers -= 2;
     cheat++;
     ctx.reply(
-      "Правильна відповідь: " +
+      "Натисни: " +
         result +
         "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
         rightAnswers
