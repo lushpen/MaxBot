@@ -243,7 +243,7 @@ async function start(ctx) {
 bot.command("/start", async (ctx) => {
   await ctx.reply(
     `Вітаю, ${ctx.from.first_name}!`,
-    Markup.keyboard([["почали"],["Найкращі"] ["вихід"]])
+    Markup.keyboard([["почали"],["Найкращі"], ["вихід"]])
       .oneTime()
       .resize()
   );
@@ -324,7 +324,7 @@ bot.on("callback_query", async (ctx) => {
       );
     }
     ctx.reply(
-      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
+      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\n https://formymaximbot.herokuapp.com/users \nТримай фото песика:)`
     );
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
     //   agent: new HttpsProxyAgent(process.env.Proxy),
