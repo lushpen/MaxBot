@@ -1,20 +1,20 @@
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
-// const url = process.env.MONGODB_URI;
-const url = "mongodb://localhost:27017/";
+ const url = process.env.MONGODB_URI;
+//const url = "mongodb://localhost:27017/";
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const fetch = require("node-fetch");
 const { Telegraf, Markup} = require("telegraf");
-// const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+ const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 
 let result, callbackData, rightAnswers, cheat, bestResults;
 let maxQuestions = 9;
-const HttpsProxyAgent = require("https-proxy-agent");
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
-  {
-    telegram:
-      { agent: new HttpsProxyAgent(process.env.Proxy) }
-  }, { polling: true });
+//const HttpsProxyAgent = require("https-proxy-agent");
+//const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
+//  {
+//    telegram:
+ //     { agent: new HttpsProxyAgent(process.env.Proxy) }
+ // }, { polling: true });
 
 const myKeyboard = {
   reply_markup: {
@@ -326,10 +326,10 @@ bot.on("callback_query", async (ctx) => {
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
-     const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-       agent: new HttpsProxyAgent(process.env.Proxy),
-     });
-     //const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //   agent: new HttpsProxyAgent(process.env.Proxy),
+    // });
+     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
