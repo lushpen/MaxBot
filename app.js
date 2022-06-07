@@ -20,7 +20,7 @@ app.use(function (req, res, next) {
  
 mongoose.connect(url+"usersdb", { useUnifiedTopology: true }, function(err){
     if(err) return console.log(err);
-    app.listen(8080, function(){
+    app.listen(process.env.PORT || 3000, function(){
         console.log("Сервер очікує...");
     });
 });
