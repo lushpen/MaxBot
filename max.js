@@ -250,7 +250,7 @@ bot.command("/start", async (ctx) => {
 });
 //Scores
 bot.hears("Найкращі",  (ctx) => {
-  await ctx.reply(
+  ctx.reply(
     `https://formymaximbot.herokuapp.com/users`
   );
 });
