@@ -19,10 +19,9 @@ exports.getUsers = function(request, response){
 exports.postUser= function(request, response){
     if(!request.body) return response.sendStatus(400);
     const userName = request.body.name;
-    const userAge = request.body.age;
     const ChatID=request.body.ChatID;
     const score=request.body.score;
-    const user = new User({name: userName, age: userAge, ChatID: ChatID, score:score});
+    const user = new User({name: userName, ChatID: ChatID, score:score});
      
     user.save(function(err){
         if(err) return console.log(err);

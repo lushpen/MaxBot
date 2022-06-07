@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Список користувачів</title>
+    <title>Наші гравці</title>
     <meta charset="utf-8" />
 </head>
 <body>
-    <a href="/users/create">Додати користувача</a>
+    <a href="/users/create">перейменувати гравця</a>
     <h1>Список користувачів</h1>
      <table>
-         <tr><th>Ім'я</th><th>Вік</th><th>chatID</th><th>Результат</th></tr>
+         <tr><th>Ім'я</th><th>chatID</th><th>Результат</th></tr>
          {{#each users}}
-            <tr><td>{{this.name}}</td><td>{{this.age}}</td><td>{{this.chatID}}</td><td>{{this.score}}</td></tr>
+            <tr><td>{{this.name}}</td><td>{{this.chatID}}</td><td>{{this.score}}</td></tr>
          {{/each}}
      </table>
 </body>

@@ -1,6 +1,6 @@
 exports.index = function (request, response) {
-    response.send("Главная страница");
+    response.send("Головна");
 };
 exports.about = function (request, response) {
-    response.send("О сайте");
+    response.send("Про сайт");
 };
