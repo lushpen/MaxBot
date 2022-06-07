@@ -5,8 +5,8 @@ const mongoose = require("mongoose");
 const app = express();
 const userRouter = require("./routes/userRouter.js");
 const homeRouter = require("./routes/homeRouter.js");
-//const url = process.env.MONGODB_URI;
-const url = "mongodb://localhost:27017/";
+const url = process.env.MONGODB_URI;
+//const url = "mongodb://localhost:27017/";
  
 app.set("view engine", "hbs");
 app.use(express.urlencoded({ extended: false }));
