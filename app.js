@@ -18,7 +18,7 @@ app.use(function (req, res, next) {
     res.status(404).send("Not Found")
 });
 
-mongoose.connect(url, { dbName: 'usersdb' }, { useUnifiedTopology: true }, function (err) {
+mongoose.connect(url, { useUnifiedTopology: true }, function (err) {
     if (err) return console.log(err);
     app.listen(process.env.PORT || 3000, function () {
         console.log("Сервер очікує...");
