@@ -324,12 +324,13 @@ bot.on("callback_query", async (ctx) => {
       );
     }
     ctx.reply(
-      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\n https://formymaximbot.herokuapp.com/users \nТримай фото песика:)`
+      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
     //   agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-     const response = await fetch("https://dog.ceo/api/breeds/image/random");
+     
+    const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
@@ -337,6 +338,7 @@ bot.on("callback_query", async (ctx) => {
     } else if (data.status == "error") {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
+    ctx.reply('Наші найкращі гравці тут:\nhttps://formymaximbot.herokuapp.com/users');
     start(ctx);
   } else if (callbackData == "cheat" && rightAnswers > 0) {
     rightAnswers -= 2;
