@@ -5,8 +5,8 @@ const mongoose = require("mongoose");
 const app = express();
 const userRouter = require("./routes/userRouter.js");
 const homeRouter = require("./routes/homeRouter.js");
-const url = process.env.MONGODB_URI;
-//const url = "mongodb://localhost:27017/";
+//const url = process.env.MONGODB_URI;
+const url = "mongodb://localhost:27017/";
  
 app.set("view engine", "hbs");
 app.use(express.urlencoded({ extended: false }));
@@ -20,7 +20,7 @@ app.use(function (req, res, next) {
  
 mongoose.connect(url+"usersdb", { useUnifiedTopology: true }, function(err){
     if(err) return console.log(err);
-    app.listen(3000, function(){
+    app.listen(8080, function(){
         console.log("Сервер очікує...");
     });
 });
