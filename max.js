@@ -181,7 +181,7 @@ async function mongoWrite(ctx, bestResults) {
       { score: findUser[0].score },
       { $set: { score: bestResults } }
     );
-    console.log(result);
+    //console.log(result);
   } catch (err) {
     console.log(err);
   } finally {
