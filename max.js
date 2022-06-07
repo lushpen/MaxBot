@@ -6,9 +6,10 @@ const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const fetch = require("node-fetch");
 const { Telegraf, Markup} = require("telegraf");
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
-//const HttpsProxyAgent = require("https-proxy-agent");
+
 let result, callbackData, rightAnswers, cheat, bestResults;
 let maxQuestions = 9;
+// const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
 //     telegram:
