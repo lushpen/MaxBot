@@ -1,25 +1,77 @@
 require("dotenv").config();
+require("./max.js");
 const express = require("express");
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+const url = process.env.MONGODB_URI;
+//const url = "mongodb://localhost:27017/";
+
 const app = express();
-const userRouter = require("./routes/userRouter.js");
-const homeRouter = require("./routes/homeRouter.js");
-//const url = process.env.MONGODB_URI;
-const url = "mongodb://localhost:27017/";
+const jsonParser = express.json();
  
-app.set("view engine", "hbs");
-app.use(express.urlencoded({ extended: false }));
+const userScheme = new Schema({name: String, chatID: Number, HighScore: Number}, {versionKey: false});
+const User = mongoose.model("User", userScheme);
  
-app.use("/users", userRouter);;
-app.use("/", homeRouter);
+app.use(express.static(__dirname + "/public"));
+mongoose.connect(url, { dbName: "usersdb", useUnifiedTopology: true }, function (err) {
+    if (err) return console.log(err);
+    app.listen(process.env.PORT || 3000, function () {
+        console.log("Сервер очікує...");
+    });
+});
+app.get("/api/users", function(req, res){
+        
+    User.find({}, function(err, users){
  
-app.use(function (req, res, next) {
-    res.status(404).send("Not Found")
+        if(err) return console.log(err);
+        res.send(users)
+    });
 });
  
-mongoose.connect(url+"usersdb", { useUnifiedTopology: true }, function(err){
-    if(err) return console.log(err);
-    app.listen(3000, function(){
-        console.log("Сервер очікує...");
+app.get("/api/users/:id", function(req, res){
+         
+    const id = req.params.id;
+    User.findOne({_id: id}, function(err, user){
+          
+        if(err) return console.log(err);
+        res.send(user);
+    });
+});
+    
+app.post("/api/users", jsonParser, function (req, res) {
+        
+    if(!req.body) return res.sendStatus(400);
+    const userScore = req.body.score;    
+    const userName = req.body.name;
+    const userChatID = req.body.chatID;
+    const user = new User({name: userName, chatID: userChatID, score: userScore});
+        
+    user.save(function(err){
+        if(err) return console.log(err);
+        res.send(user);
+    });
+});
+     
+app.delete("/api/users/:id", function(req, res){
+         
+    const id = req.params.id;
+    User.findByIdAndDelete(id, function(err, user){
+                
+        if(err) return console.log(err);
+        res.send(user);
+    });
+});
+    
+app.put("/api/users", jsonParser, function(req, res){
+         
+    if(!req.body) return res.sendStatus(400);
+    const id = req.body.id;
+    const userName = req.body.name;
+    const userChatID = req.body.chatID;
+    const newUser = {chatID: userChatID , name: userName};
+     
+    User.findOneAndUpdate({_id: id}, newUser, {new: true}, function(err, user){
+        if(err) return console.log(err); 
+        res.send(user);
     });
 });
