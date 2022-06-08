@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "node max.js",
-    "dev": "nodemon app.js"
+    "dev": "node app.js"
   },
   "author": "",
   "license": "ISC",
