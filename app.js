@@ -16,7 +16,7 @@ app.use(express.static(__dirname + "/public"));
 mongoose.connect(url, { dbName: "usersdb", useUnifiedTopology: true }, function (err) {
     if (err) return console.log(err);
     app.listen(process.env.PORT || 3000, function () {
-        console.log("Сервер очікує...");
+        console.log("Сервер працює...");
     });
 });
 app.get("/api/users", function(req, res){
