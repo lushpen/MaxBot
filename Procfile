@@ -1,2 +1,2 @@
 worker: npm start
-worker: npm dev
+web: npm app.js
