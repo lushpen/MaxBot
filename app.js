@@ -1,9 +1,9 @@
 require("dotenv").config();
-require("./max.js");
+//require("./max.js");
 const express = require("express");
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const url = process.env.MONGODB_URI;
+ const url = process.env.MONGODB_URI;
 //const url = "mongodb://localhost:27017/";
 
 const app = express();

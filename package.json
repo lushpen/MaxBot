@@ -11,12 +11,12 @@
   },
   "name": "maxbot",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "max.js",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node max.js",
     "dev": "nodemon app.js"
   },
   "author": "",
