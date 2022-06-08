@@ -9,8 +9,7 @@ const array = [
   8, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
   9, [9, 18, 27, 36, 45, 54, 63, 72, 81, 90],
   10, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]];
-const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
-//require("./app.js");
+const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];//база дільників
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
 const url = process.env.MONGODB_URI;
@@ -349,7 +348,7 @@ bot.on("callback_query", async (ctx) => {
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
     //   agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-       const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
