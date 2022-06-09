@@ -2,11 +2,11 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
-let result, rightAnswers = 0, cheat = 0, bestResults = 0;
+let result, rightAnswers = 0, cheat = 0, bestResults;
 let maxQuestions = 9;
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
-const url = process.env.MONGODB_URI;
-// const url = "mongodb://localhost:27017/";
+ const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+ const url = process.env.MONGODB_URI;
+//const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
@@ -245,6 +245,7 @@ async function start(ctx) {
   bestResults = 0;
   mongo(ctx, bestResults).then(function (value) {
     bestResults = value;
+    console.log("Async:", bestResults);
   });
   //console.log(`externalbestres`, bestResults);
   return ctx.replyWithMarkdown(
