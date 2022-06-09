@@ -2,7 +2,7 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
-let result, rightAnswers=0, cheat=0, bestResults=0;
+let result, rightAnswers = 0, cheat = 0, bestResults = 0;
 let maxQuestions = 9;
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 const url = process.env.MONGODB_URI;
@@ -14,11 +14,11 @@ const url = process.env.MONGODB_URI;
 //       { agent: new HttpsProxyAgent(process.env.Proxy) }
 //   }, { polling: true });
 
-  const MongoClient = require("mongodb").MongoClient;
-  const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
-  const db = mongoClient.db("usersdb");
-  const collection = db.collection("users");
-  const myKeyboard = {
+const MongoClient = require("mongodb").MongoClient;
+const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
+const db = mongoClient.db("usersdb");
+const collection = db.collection("users");
+const myKeyboard = {
   reply_markup: {
     inline_keyboard: [
       [
@@ -216,7 +216,7 @@ async function mongoWrite(ctx, bestResults) {
       { score: findUser[0].score },
       { $set: { score: bestResults } }
     );
-  //  console.log(resp);
+    //  console.log(resp);
   } catch (err) {
     console.log(err);
   } finally {
@@ -256,7 +256,7 @@ async function start(ctx) {
 bot.command("/start", async (ctx) => {
   await ctx.reply(
     `Вітаю, ${ctx.from.first_name}!`,
-    Markup.keyboard([["почали"], ["Найкращі"], ["вихід"]])
+    Markup.keyboard([["Почали"], ["Найкращі гравці"], ["Вихід"]])
       .oneTime()
       .resize()
   );
@@ -269,7 +269,7 @@ bot.hears("Найкращі гравці", (ctx) => {
 });
 
 //start
-bot.hears("почали", async (ctx) => {
+bot.hears("Почали", async (ctx) => {
   await ctx.reply(
     `Готовий практикуватися у математиці?\nПравила прості: \n${maxQuestions + 1
     } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${maxQuestions + 1
@@ -279,7 +279,7 @@ bot.hears("почали", async (ctx) => {
 });
 
 //exit button action
-bot.hears("вихід", async (ctx) => {
+bot.hears("Вихід", async (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
 bot.action("multi", (ctx) => {
@@ -306,12 +306,13 @@ bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
 bot.on("callback_query", async (ctx) => {
-  if (result==undefined || bestResults==undefined) {
-   await ctx.telegram.sendMessage(
+  if (result == undefined || bestResults == undefined) {
+    await ctx.telegram.sendMessage(
       ctx.from.id,
       `Сталася помилка, давай спочатку`);
     start(ctx);
-    return;}
+    return;
+  }
   if (!rightAnswers) rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
   if (callbackData == result && rightAnswers < maxQuestions) {
@@ -335,7 +336,8 @@ bot.on("callback_query", async (ctx) => {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
       if (bestResults) {
-      await mongoWrite(ctx, bestResults);}
+        await mongoWrite(ctx, bestResults);
+      }
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
         2000
@@ -345,9 +347,9 @@ bot.on("callback_query", async (ctx) => {
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-    //  agent: new HttpsProxyAgent(process.env.Proxy),
+    //   agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-   const response = await fetch("https://dog.ceo/api/breeds/image/random");
+     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
