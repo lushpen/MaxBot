@@ -1,32 +1,24 @@
-const array = [
-  1, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-  2, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
-  3, [3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
-  4, [4, 8, 12, 16, 20, 24, 28, 32, 36, 40],
-  5, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-  6, [6, 12, 18, 24, 30, 36, 42, 48, 54, 60],
-  7, [7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
-  8, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
-  9, [9, 18, 27, 36, 45, 54, 63, 72, 81, 90],
-  10, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]];
-const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];//база дільників
+
 require("dotenv").config();
-const MongoClient = require("mongodb").MongoClient;
-const url = process.env.MONGODB_URI;
-// const url = "mongodb://localhost:27017/";
-const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
-// const HttpsProxyAgent = require("https-proxy-agent");
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
-let result, rightAnswers, cheat, bestResults;
+let result, rightAnswers=0, cheat=0, bestResults=0;
 let maxQuestions = 9;
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+const url = process.env.MONGODB_URI;
+// const url = "mongodb://localhost:27017/";
+// const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
 //     telegram:
 //       { agent: new HttpsProxyAgent(process.env.Proxy) }
 //   }, { polling: true });
-const myKeyboard = {
+
+  const MongoClient = require("mongodb").MongoClient;
+  const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
+  const db = mongoClient.db("usersdb");
+  const collection = db.collection("users");
+  const myKeyboard = {
   reply_markup: {
     inline_keyboard: [
       [
@@ -111,7 +103,19 @@ function mixedKeyboard(ctx, action) {
         }
         result = a - b;
         break;
-      case "/":
+      case ":":
+        const array = [
+          1, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          2, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+          3, [3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
+          4, [4, 8, 12, 16, 20, 24, 28, 32, 36, 40],
+          5, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+          6, [6, 12, 18, 24, 30, 36, 42, 48, 54, 60],
+          7, [7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
+          8, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
+          9, [9, 18, 27, 36, 45, 54, 63, 72, 81, 90],
+          10, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]];
+        const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];//база дільників
         c = pair[Math.floor(Math.random() * pair.length)];
         d = pair[Math.floor(Math.random() * pair.length)];
         e = pair[Math.floor(Math.random() * pair.length)];
@@ -174,12 +178,9 @@ function mixedKeyboard(ctx, action) {
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
   return answerKeyboard;
 }
-
 async function mongo(ctx, bestResults) {
   try {
     await mongoClient.connect();
-    const db = mongoClient.db("usersdb");
-    const collection = db.collection("users");
     const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
     //adding user to database
     if (!findUser[0]) {
@@ -188,15 +189,15 @@ async function mongo(ctx, bestResults) {
         name: ctx.from.first_name,
         score: bestResults,
       };
-      const result = await collection.insertOne(user); //add user
-      //console.log(`user added to database`, result);
+      const resp = await collection.insertOne(user); //add user
+      //console.log(`user added to database`, resp);
     } else if (
       (findUser[0].chatID == ctx.from.id && bestResults < findUser[0].score) ||
       findUser[0].score === null
     ) {
       bestResults = findUser[0].score;
     }
-    //console.log(result);
+    //console.log(resp);
   } catch (err) {
     console.log(err);
   } finally {
@@ -209,15 +210,13 @@ async function mongo(ctx, bestResults) {
 async function mongoWrite(ctx, bestResults) {
   try {
     await mongoClient.connect();
-    const db = mongoClient.db("usersdb");
-    const collection = db.collection("users");
     const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
     //adding user to database
-    const result = await collection.updateOne(
+    const resp = await collection.updateOne(
       { score: findUser[0].score },
       { $set: { score: bestResults } }
     );
-    //console.log(result);
+  //  console.log(resp);
   } catch (err) {
     console.log(err);
   } finally {
@@ -226,7 +225,7 @@ async function mongoWrite(ctx, bestResults) {
 }
 function random(action) {
   if (!action) {
-    let myArray = ["+", "-", "*", "/"];
+    let myArray = ["+", "-", "*", ":"];
     action = myArray[Math.floor(Math.random() * myArray.length)];
   }
   return action;
@@ -247,7 +246,6 @@ async function start(ctx) {
   mongo(ctx, bestResults).then(function (value) {
     bestResults = value;
   });
-  //await test;
   //console.log(`externalbestres`, bestResults);
   return ctx.replyWithMarkdown(
     `Давай трохи пограємо?\nОбери варіант:`,
@@ -264,7 +262,7 @@ bot.command("/start", async (ctx) => {
   );
 });
 //Scores
-bot.hears("Найкращі", (ctx) => {
+bot.hears("Найкращі гравці", (ctx) => {
   ctx.reply(
     `https://formymaximbot.herokuapp.com/`
   );
@@ -297,7 +295,7 @@ bot.action("sub", (ctx) => {
   mixedKeyboard(ctx, action);
 });
 bot.action("div", (ctx) => {
-  action = "/";
+  action = ":";
   mixedKeyboard(ctx, action);
 });
 bot.action("impress", (ctx) => {
@@ -308,11 +306,12 @@ bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
 bot.on("callback_query", async (ctx) => {
-  if (!result) {
+  if (result==undefined || bestResults==undefined) {
+   await ctx.telegram.sendMessage(
+      ctx.from.id,
+      `Сталася помилка, давай спочатку`);
     start(ctx);
-    return;
-  }
-  //console.log(result);
+    return;}
   if (!rightAnswers) rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
   if (callbackData == result && rightAnswers < maxQuestions) {
@@ -335,20 +334,20 @@ bot.on("callback_query", async (ctx) => {
   } else if (callbackData == result && rightAnswers >= maxQuestions) {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
-      //console.log(`top`, bestResults);
-      mongoWrite(ctx, bestResults);
+      if (bestResults) {
+      await mongoWrite(ctx, bestResults);}
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
-        1000
+        2000
       );
     }
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-    //   agent: new HttpsProxyAgent(process.env.Proxy),
+    //  agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-    const response = await fetch("https://dog.ceo/api/breeds/image/random");
+   const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
