@@ -2,6 +2,7 @@ require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
 let rightAnswers = 0,
+  chatID,
   cheat = 0,
   bestResults;
 let maxQuestions = 9;
@@ -176,7 +177,7 @@ function mixedKeyboard(ctx, action) {
       ],
     },
   };
-  // chatID = ctx.from.id;
+  if (!chatID) chatID = ctx.from.id;
   if (!ctx.db)
     bot.context.db = { [chatID]: { result, rightAnswers, bestResults } };
   else
