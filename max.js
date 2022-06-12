@@ -341,7 +341,7 @@ bot.on("callback_query", async (ctx) => {
   }
   if (!rightAnswers) ctx.db[chatID].rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
-  console.log(callbackData);
+  console.log(callbackData, chatID);
   if (
     callbackData == ctx.db[chatID].result &&
     ctx.db[chatID].rightAnswers < maxQuestions
