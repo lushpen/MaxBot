@@ -1,11 +1,12 @@
-
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
-let result, rightAnswers = 0, cheat = 0, bestResults;
+let rightAnswers = 0,
+  cheat = 0,
+  bestResults;
 let maxQuestions = 9;
- const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
- const url = process.env.MONGODB_URI;
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+const url = process.env.MONGODB_URI;
 //const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
@@ -49,13 +50,13 @@ const myKeyboard = {
         {
           text: "Здивуй мене :)",
           callback_data: "impress",
-        }
+        },
       ],
       [
         {
           text: "Я вже втомився :((",
           callback_data: "exit",
-        }
+        },
       ],
     ],
   },
@@ -105,17 +106,28 @@ function mixedKeyboard(ctx, action) {
         break;
       case ":":
         const array = [
-          1, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-          2, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
-          3, [3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
-          4, [4, 8, 12, 16, 20, 24, 28, 32, 36, 40],
-          5, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-          6, [6, 12, 18, 24, 30, 36, 42, 48, 54, 60],
-          7, [7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
-          8, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
-          9, [9, 18, 27, 36, 45, 54, 63, 72, 81, 90],
-          10, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]];
-        const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];//база дільників
+          1,
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          2,
+          [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+          3,
+          [3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
+          4,
+          [4, 8, 12, 16, 20, 24, 28, 32, 36, 40],
+          5,
+          [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+          6,
+          [6, 12, 18, 24, 30, 36, 42, 48, 54, 60],
+          7,
+          [7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
+          8,
+          [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
+          9,
+          [9, 18, 27, 36, 45, 54, 63, 72, 81, 90],
+          10,
+          [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        ];
+        const pair = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]; //база дільників
         c = pair[Math.floor(Math.random() * pair.length)];
         d = pair[Math.floor(Math.random() * pair.length)];
         e = pair[Math.floor(Math.random() * pair.length)];
@@ -164,6 +176,13 @@ function mixedKeyboard(ctx, action) {
       ],
     },
   };
+  chatID = ctx.from.id;
+  if (!ctx.db) bot.context.db = { [chatID]: { result, rightAnswers } };
+  else
+    bot.context.db = Object.assign(ctx.db, {
+      [chatID]: { result, rightAnswers },
+    });
+  //console.log(ctx.db);
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
@@ -264,16 +283,16 @@ bot.command("/start", async (ctx) => {
 });
 //Scores
 bot.hears("Найкращі гравці", (ctx) => {
-  ctx.reply(
-    `https://formymaximbot.herokuapp.com/`
-  );
+  ctx.reply(`https://formymaximbot.herokuapp.com/`);
 });
 
 //start
 bot.hears("Почали", async (ctx) => {
   await ctx.reply(
-    `Готовий практикуватися у математиці?\nПравила прості: \n${maxQuestions + 1
-    } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${maxQuestions + 1
+    `Готовий практикуватися у математиці?\nПравила прості: \n${
+      maxQuestions + 1
+    } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${
+      maxQuestions + 1
     } питань отримаєш приз!`
   );
   start(ctx);
@@ -306,34 +325,44 @@ bot.action("impress", (ctx) => {
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
-bot.on("callback_query", async (ctx) => {
-  if (result == undefined || bestResults == undefined) {
-    await ctx.telegram.sendMessage(
-      ctx.from.id,
-      `Сталася помилка, давай спочатку`);
+bot.on("callback_query", async (ctx, chatID) => {
+  // bot.context.db = Object.assign(ctx.db, rightAnswers);
+  //console.log(ctx.db);
+  //console.log(ctx.db[chatID]);
+  //chatID = ctx.from.id;
+  // console.log(ctx.db);
+  console.log(ctx.db);
+  if (!ctx.db || result == undefined || bestResults == undefined) {
+    await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
     start(ctx);
     return;
   }
   if (!rightAnswers) rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
-  if (callbackData == result && rightAnswers < maxQuestions) {
+  if (callbackData == ctx.db[chatID].result && rightAnswers < maxQuestions) {
     await ctx.telegram.sendMessage(
-      ctx.from.id,
-      `Молодець! Дай правильну відповідь ще на ${maxQuestions - rightAnswers
+      chatID,
+      `Молодець! Дай правильну відповідь ще на ${
+        maxQuestions - rightAnswers
       } питань і отримаєш приз!`
     );
+
     rightAnswers++;
+    //console.log(rightAnswers);
     if (ctx.update.callback_query.message.message_id + 1) {
       setTimeout(
         () =>
-          ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
-        5000
+          // ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
+          5000
       );
     }
     //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     mixedKeyboard(ctx, random(action));
-  } else if (callbackData == result && rightAnswers >= maxQuestions) {
+  } else if (
+    callbackData == ctx.db[chatID].result &&
+    rightAnswers >= maxQuestions
+  ) {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
       if (bestResults) {
@@ -350,7 +379,7 @@ bot.on("callback_query", async (ctx) => {
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
     //   agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-     const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
@@ -358,23 +387,26 @@ bot.on("callback_query", async (ctx) => {
     } else if (data.status == "error") {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
-    ctx.reply('Наші найкращі гравці тут:\nhttps://formymaximbot.herokuapp.com/');
+    ctx.reply(
+      "Наші найкращі гравці тут:\nhttps://formymaximbot.herokuapp.com/"
+    );
     start(ctx);
   } else if (callbackData == "cheat" && rightAnswers > 0) {
     rightAnswers -= 2;
     cheat++;
     ctx.reply(
       "Натисни: " +
-      result +
-      "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-      rightAnswers
+        ctx.db[chatID].result +
+        "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
+        rightAnswers
     );
   } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
     await ctx.reply(
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-      rightAnswers
+        rightAnswers
     );
+
     start(ctx);
   }
 });
