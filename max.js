@@ -176,11 +176,12 @@ function mixedKeyboard(ctx, action) {
       ],
     },
   };
-  chatID = ctx.from.id;
-  if (!ctx.db) bot.context.db = { [chatID]: { result, rightAnswers } };
+  // chatID = ctx.from.id;
+  if (!ctx.db)
+    bot.context.db = { [chatID]: { result, rightAnswers, bestResults } };
   else
     bot.context.db = Object.assign(ctx.db, {
-      [chatID]: { result, rightAnswers },
+      [chatID]: { result, rightAnswers, bestResults },
     });
   //console.log(ctx.db);
   answerKeyboard.reply_markup.inline_keyboard[0][
@@ -200,18 +201,18 @@ function mixedKeyboard(ctx, action) {
 async function mongo(ctx, bestResults) {
   try {
     await mongoClient.connect();
-    const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
+    const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
     //adding user to database
     if (!findUser[0]) {
       let user = {
-        chatID: ctx.from.id,
+        chatID: chatID,
         name: ctx.from.first_name,
         score: bestResults,
       };
       const resp = await collection.insertOne(user); //add user
       //console.log(`user added to database`, resp);
     } else if (
-      (findUser[0].chatID == ctx.from.id && bestResults < findUser[0].score) ||
+      (findUser[0].chatID == chatID && bestResults < findUser[0].score) ||
       findUser[0].score === null
     ) {
       bestResults = findUser[0].score;
@@ -229,7 +230,7 @@ async function mongo(ctx, bestResults) {
 async function mongoWrite(ctx, bestResults) {
   try {
     await mongoClient.connect();
-    const findUser = await collection.find({ chatID: ctx.from.id }).toArray(); //find user
+    const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
     //adding user to database
     const resp = await collection.updateOne(
       { score: findUser[0].score },
@@ -262,11 +263,11 @@ async function start(ctx) {
   cheat = 0;
   rightAnswers = 0;
   bestResults = 0;
+  chatID = ctx.from.id;
   mongo(ctx, bestResults).then(function (value) {
     bestResults = value;
     console.log("Async:", bestResults);
   });
-  //console.log(`externalbestres`, bestResults);
   return ctx.replyWithMarkdown(
     `Давай трохи пограємо?\nОбери варіант:`,
     myKeyboard
@@ -325,25 +326,29 @@ bot.action("impress", (ctx) => {
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
-bot.on("callback_query", async (ctx, chatID) => {
+bot.on("callback_query", async (ctx) => {
   // bot.context.db = Object.assign(ctx.db, rightAnswers);
   //console.log(ctx.db);
   //console.log(ctx.db[chatID]);
-  //chatID = ctx.from.id;
+  // chatID = ctx.from.id;
   // console.log(ctx.db);
   console.log(ctx.db);
-  if (!ctx.db || result == undefined || bestResults == undefined) {
+  if (!chatID || !ctx.db || result == undefined || bestResults == undefined) {
     await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
     start(ctx);
     return;
   }
-  if (!rightAnswers) rightAnswers = 0;
+  if (!rightAnswers) ctx.db[chatID].rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
-  if (callbackData == ctx.db[chatID].result && rightAnswers < maxQuestions) {
+  console.log(callbackData);
+  if (
+    callbackData == ctx.db[chatID].result &&
+    ctx.db[chatID].rightAnswers < maxQuestions
+  ) {
     await ctx.telegram.sendMessage(
       chatID,
       `Молодець! Дай правильну відповідь ще на ${
-        maxQuestions - rightAnswers
+        maxQuestions - ctx.db[chatID].rightAnswers
       } питань і отримаєш приз!`
     );
 
@@ -361,12 +366,12 @@ bot.on("callback_query", async (ctx, chatID) => {
     mixedKeyboard(ctx, random(action));
   } else if (
     callbackData == ctx.db[chatID].result &&
-    rightAnswers >= maxQuestions
+    ctx.db[chatID].rightAnswers >= maxQuestions
   ) {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
       if (bestResults) {
-        await mongoWrite(ctx, bestResults);
+        await mongoWrite(ctx, ctx.db[chatID].bestResults);
       }
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
