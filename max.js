@@ -235,7 +235,7 @@ async function mongo(ctx, bestResults, chatID) {
     resolve(bestResults);
   });
 }
-async function mongoWrite(ctx, bestResults, chatID) {
+async function mongoWrite(bestResults, chatID) {
   try {
     await mongoClient.connect();
     const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
@@ -383,7 +383,7 @@ bot.on("callback_query", async (ctx) => {
       if (bestResults) {
         //ctx.db[chatID].bestResults=bestResults;
         console.log(bestResults,chatID);
-        await mongoWrite(ctx, bestResults, chatID);
+        await mongoWrite(bestResults, chatID);
       }
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
