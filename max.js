@@ -206,7 +206,7 @@ function mixedKeyboard(ctx, action, chatID) {
     ctx.deleteMessage(ctx.update.callback_query.message.message_id);
   return answerKeyboard;
 }
-async function mongo(ctx, bestResults) {
+async function mongo(ctx, bestResults, chatID) {
   try {
     await mongoClient.connect();
     const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
@@ -235,7 +235,7 @@ async function mongo(ctx, bestResults) {
     resolve(bestResults);
   });
 }
-async function mongoWrite(ctx, bestResults) {
+async function mongoWrite(ctx, bestResults, chatID) {
   try {
     await mongoClient.connect();
     const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
@@ -276,7 +276,7 @@ async function start(ctx) {
   rightAnswers = 0;
   bestResults = 0;
   chatID = ctx.from.id;
-  mongo(ctx, bestResults).then(function (value) {
+  mongo(ctx, bestResults,chatID).then(function (value) {
     bestResults = value;
     console.log("Async:", bestResults);
   });
@@ -382,7 +382,7 @@ bot.on("callback_query", async (ctx) => {
       console.log(bestResults);
       if (bestResults) {
         ctx.db[chatID].bestResults=bestResults;
-        await mongoWrite(ctx, ctx.db[chatID].bestResults);
+        await mongoWrite(ctx, ctx.db[chatID].bestResults, chatID);
       }
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
@@ -392,9 +392,9 @@ bot.on("callback_query", async (ctx) => {
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
-    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-    //   agent: new HttpsProxyAgent(process.env.Proxy),
-    // });
+    //  const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //    agent: new HttpsProxyAgent(process.env.Proxy),
+    //  });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
