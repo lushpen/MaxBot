@@ -244,7 +244,7 @@ async function mongoWrite(bestResults, chatID) {
       { score: findUser[0].score },
       { $set: { score: bestResults } }
     );
-    //  console.log(resp);
+      console.log(resp);
   } catch (err) {
     console.log(err);
   } finally {
