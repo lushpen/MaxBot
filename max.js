@@ -12,10 +12,10 @@ let maxQuestions = 1;
 // const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
-  {
-    telegram:
-      { agent: new HttpsProxyAgent(process.env.Proxy) }
-  }, { polling: true });
+  // {
+  //   telegram:
+  //     { agent: new HttpsProxyAgent(process.env.Proxy) }
+  // }, { polling: true });
 
 const MongoClient = require("mongodb").MongoClient;
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
