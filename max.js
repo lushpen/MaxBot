@@ -6,16 +6,16 @@ let rightAnswers = 0,
   chatID,
   cheat = 0,
   bestResults;
-let maxQuestions = 9;
+let maxQuestions = 1;
  const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
  const url = process.env.MONGODB_URI;
 // const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
-//   {
-//     telegram:
-//       { agent: new HttpsProxyAgent(process.env.Proxy) }
-//   }, { polling: true });
+  {
+    telegram:
+      { agent: new HttpsProxyAgent(process.env.Proxy) }
+  }, { polling: true });
 
 const MongoClient = require("mongodb").MongoClient;
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
@@ -381,8 +381,9 @@ bot.on("callback_query", async (ctx) => {
       bestResults++;
       console.log(bestResults);
       if (bestResults) {
-        ctx.db[chatID].bestResults=bestResults;
-        await mongoWrite(ctx, ctx.db[chatID].bestResults, chatID);
+        //ctx.db[chatID].bestResults=bestResults;
+        console.log(bestResults,chatID);
+        await mongoWrite(ctx, bestResults, chatID);
       }
       setTimeout(
         () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
