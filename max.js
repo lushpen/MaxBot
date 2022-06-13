@@ -280,7 +280,7 @@ async function start(ctx) {
     bestResults = value;
     console.log("Async:", bestResults);
   });
-  return chatID
+  return bestResults
 }
 //start button
 bot.command("/start", async (ctx) => {
