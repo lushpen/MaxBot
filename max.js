@@ -1,14 +1,15 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
+let siteUrl=`https://maxbotsite.herokuapp.com/`;
 let rightAnswers = 0,
   chatID,
   cheat = 0,
   bestResults;
 let maxQuestions = 9;
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
-const url = process.env.MONGODB_URI;
-//const url = "mongodb://localhost:27017/";
+ const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+ const url = process.env.MONGODB_URI;
+// const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
 //   {
@@ -59,10 +60,16 @@ const myKeyboard = {
           callback_data: "exit",
         },
       ],
+      [
+        {
+          text: "Найкращі гравці",
+          url: siteUrl,
+        },
+      ],
     ],
   },
 };
-function mixedKeyboard(ctx, action) {
+function mixedKeyboard(ctx, action, chatID) {
   do {
     switch (action) {
       case "*":
@@ -261,6 +268,10 @@ function random(action) {
 // return result;
 //}
 async function start(ctx) {
+  ctx.replyWithMarkdown(
+    `Давай трохи пограємо?\nОбери варіант:`,
+    myKeyboard
+  );
   cheat = 0;
   rightAnswers = 0;
   bestResults = 0;
@@ -269,10 +280,7 @@ async function start(ctx) {
     bestResults = value;
     console.log("Async:", bestResults);
   });
-  return ctx.replyWithMarkdown(
-    `Давай трохи пограємо?\nОбери варіант:`,
-    myKeyboard
-  );
+  return chatID
 }
 //start button
 bot.command("/start", async (ctx) => {
@@ -285,7 +293,7 @@ bot.command("/start", async (ctx) => {
 });
 //Scores
 bot.hears("Найкращі гравці", (ctx) => {
-  ctx.reply(`https://formymaximbot.herokuapp.com/`);
+  ctx.reply(siteUrl);
 });
 
 //start
@@ -306,42 +314,42 @@ bot.hears("Вихід", async (ctx) => {
 });
 bot.action("multi", (ctx) => {
   action = "*";
-  mixedKeyboard(ctx, action);
+  mixedKeyboard(ctx, action,chatID);
 });
 bot.action("sum", (ctx) => {
   action = "+";
-  mixedKeyboard(ctx, action);
+  mixedKeyboard(ctx, action,chatID);
 });
 bot.action("sub", (ctx) => {
   action = "-";
-  mixedKeyboard(ctx, action);
+  mixedKeyboard(ctx, action,chatID);
 });
 bot.action("div", (ctx) => {
   action = ":";
-  mixedKeyboard(ctx, action);
+  mixedKeyboard(ctx, action,chatID);
 });
 bot.action("impress", (ctx) => {
   action = random();
-  mixedKeyboard(ctx, action);
+  mixedKeyboard(ctx, action,chatID);
 });
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
 bot.on("callback_query", async (ctx) => {
-  // bot.context.db = Object.assign(ctx.db, rightAnswers);
+
   //console.log(ctx.db);
-  //console.log(ctx.db[chatID]);
+  //console.log(Object.keys(ctx.db).toString());
   // chatID = ctx.from.id;
   // console.log(ctx.db);
-  console.log(ctx.db);
-  if (!chatID || !ctx.db || result == undefined || bestResults == undefined) {
-    await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
+ // console.log(ctx.db);
+  if ( ctx.db == undefined || result == undefined || bestResults == undefined) {
+    await ctx.telegram.sendMessage(ctx.from.id, `Сталася помилка, давай спочатку`);
     start(ctx);
     return;
   }
   if (!rightAnswers) ctx.db[chatID].rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
-  console.log(callbackData, chatID);
+  console.log( chatID, callbackData,ctx.db[chatID].result);
   if (
     callbackData == ctx.db[chatID].result &&
     ctx.db[chatID].rightAnswers < maxQuestions
@@ -371,7 +379,9 @@ bot.on("callback_query", async (ctx) => {
   ) {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
+      console.log(bestResults);
       if (bestResults) {
+        ctx.db[chatID].bestResults=bestResults;
         await mongoWrite(ctx, ctx.db[chatID].bestResults);
       }
       setTimeout(
@@ -394,7 +404,7 @@ bot.on("callback_query", async (ctx) => {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
     ctx.reply(
-      "Наші найкращі гравці тут:\nhttps://formymaximbot.herokuapp.com/"
+      "Наші найкращі гравці тут:\n"+siteUrl
     );
     start(ctx);
   } else if (callbackData == "cheat" && rightAnswers > 0) {
