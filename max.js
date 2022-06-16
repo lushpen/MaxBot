@@ -2,20 +2,17 @@ require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
 let siteUrl=`https://maxbotsite.herokuapp.com/`;
-let rightAnswers = 0,
-  chatID,
-  cheat = 0,
-  bestResults;
-let maxQuestions = 1;
+let result, rightAnswers, cheat, bestResults, chatID;
+let maxQuestions = 9;
  const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
  const url = process.env.MONGODB_URI;
 // const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
-  // {
-  //   telegram:
-  //     { agent: new HttpsProxyAgent(process.env.Proxy) }
-  // }, { polling: true });
+//   {
+//     telegram:
+//       { agent: new HttpsProxyAgent(process.env.Proxy) }
+//   }, { polling: true });
 
 const MongoClient = require("mongodb").MongoClient;
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
@@ -336,66 +333,59 @@ bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
 });
 bot.on("callback_query", async (ctx) => {
-
-  //console.log(ctx.db);
-  //console.log(Object.keys(ctx.db).toString());
-  // chatID = ctx.from.id;
-  // console.log(ctx.db);
- // console.log(ctx.db);
-  if ( ctx.db == undefined || result == undefined || bestResults == undefined) {
-    await ctx.telegram.sendMessage(ctx.from.id, `Сталася помилка, давай спочатку`);
-    start(ctx);
-    return;
-  }
-  if (!rightAnswers) ctx.db[chatID].rightAnswers = 0;
   callbackData = ctx.update.callback_query.data;
-  console.log( chatID, callbackData,ctx.db[chatID].result);
-  if (
-    callbackData == ctx.db[chatID].result &&
-    ctx.db[chatID].rightAnswers < maxQuestions
-  ) {
+  chatID = ctx.from.id;
+  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData })
+  console.log(ctx.db);
+   if (!rightAnswers) rightAnswers = 0;
+  //bot.context.result = { [chatID]: [result] };
+  //console.log("callback_object", ctx.result);
+  //console.log(ctx);
+  // console.log(ctx.result);
+  //console.log(result, callbackData, ctx.from.id);
+  //console.log("callback", callbackData);
+  //console.log(ctx.result);
+  // console.log(ctx.result[chatID]);
+  if (ctx.db[chatID].result == ctx.db[chatID].callbackData && ctx.db[chatID].rightAnswers < maxQuestions) {
     await ctx.telegram.sendMessage(
       chatID,
       `Молодець! Дай правильну відповідь ще на ${
         maxQuestions - ctx.db[chatID].rightAnswers
       } питань і отримаєш приз!`
     );
-
-    rightAnswers++;
-    //console.log(rightAnswers);
+    rightAnswers=ctx.db[chatID].rightAnswers+1
+   // console.log('rightAnswers',rightAnswers);
+    //rightAnswers++;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers })
     if (ctx.update.callback_query.message.message_id + 1) {
-      setTimeout(
-        () =>
-          // ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
-          5000
-      );
+      // setTimeout(
+      //   () =>
+      //     ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
+      //   3000
+      // );
     }
     //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     mixedKeyboard(ctx, random(action));
   } else if (
-    callbackData == ctx.db[chatID].result &&
+    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
     ctx.db[chatID].rightAnswers >= maxQuestions
   ) {
     if (ctx.update.callback_query.message.message_id) {
       bestResults++;
-      console.log(bestResults);
-      if (bestResults) {
-        //ctx.db[chatID].bestResults=bestResults;
-        console.log(bestResults,chatID);
-        await mongoWrite(bestResults, chatID);
-      }
-      setTimeout(
-        () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
-        2000
-      );
+      //console.log(`top`, bestResults);
+      mongoWrite(bestResults, chatID);
+      // setTimeout(
+      //   () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
+      //   1000
+      // );
     }
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
-    //  const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-    //    agent: new HttpsProxyAgent(process.env.Proxy),
-    //  });
+    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //  agent: new HttpsProxyAgent(process.env.Proxy),
+    // });
     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
@@ -408,26 +398,26 @@ bot.on("callback_query", async (ctx) => {
       "Наші найкращі гравці тут:\n"+siteUrl
     );
     start(ctx);
-  } else if (callbackData == "cheat" && rightAnswers > 0) {
-    rightAnswers -= 2;
+  } else if (ctx.db[chatID].callbackData == "cheat" && ctx.db[chatID].rightAnswers > 0) {
+    rightAnswers=ctx.db[chatID].rightAnswers-2
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers })
     cheat++;
-    ctx.reply(
+    ctx.telegram.sendMessage(
+      chatID,
       "Натисни: " +
-        ctx.db[chatID].result +
+        result +
         "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-        rightAnswers
+        ctx.db[chatID].rightAnswers
     );
   } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
     await ctx.reply(
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-        rightAnswers
+      ctx.db[chatID].rightAnswers
     );
-
     start(ctx);
   }
 });
-
 bot.catch((err, ctx) => {
   console.log(`Ох-охо-xo, сталося щось жаахливе: ${ctx.updateType}`, err);
 });
