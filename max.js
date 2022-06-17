@@ -1,11 +1,11 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
-let siteUrl=`https://maxbotsite.herokuapp.com/`;
+let siteUrl = `https://maxbotsite.herokuapp.com/`;
 let result, rightAnswers, cheat, bestResults, chatID;
 let maxQuestions = 9;
- const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
- const url = process.env.MONGODB_URI;
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+const url = process.env.MONGODB_URI;
 // const url = "mongodb://localhost:27017/";
 // const HttpsProxyAgent = require("https-proxy-agent");
 // const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
@@ -188,7 +188,7 @@ function mixedKeyboard(ctx, action, chatID) {
     bot.context.db = Object.assign(ctx.db, {
       [chatID]: { result, rightAnswers, bestResults },
     });
-  //console.log(ctx.db);
+  console.log(chatID);
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
@@ -216,11 +216,14 @@ async function mongo(ctx, bestResults, chatID) {
       };
       const resp = await collection.insertOne(user); //add user
       //console.log(`user added to database`, resp);
-    } else if (
-      (findUser[0].chatID == chatID && bestResults < findUser[0].score) ||
-      findUser[0].score === null
-    ) {
-      bestResults = findUser[0].score;
+    }
+    // else if (findUser[0].score === null)
+    else if (findUser[0].chatID == chatID) {
+      const resp = await collection.updateOne(
+        { chatID: findUser[0].chatID, score: findUser[0].score },
+        { $set: { score: findUser[0].score + 1 } }
+      );
+      // console.log("User:", findUser[0], "updated score:",findUser[0].score + 1);
     }
     //console.log(resp);
   } catch (err) {
@@ -228,26 +231,26 @@ async function mongo(ctx, bestResults, chatID) {
   } finally {
     await mongoClient.close();
   }
-  return new Promise(function (resolve) {
-    resolve(bestResults);
-  });
+  //   return new Promise(function (resolve) {
+  // resolve(bestResults);
+  //   });
 }
-async function mongoWrite(bestResults, chatID) {
-  try {
-    await mongoClient.connect();
-    const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
-    //adding user to database
-    const resp = await collection.updateOne(
-      { score: findUser[0].score },
-      { $set: { score: bestResults } }
-    );
-      console.log(resp);
-  } catch (err) {
-    console.log(err);
-  } finally {
-    await mongoClient.close();
-  }
-}
+// async function mongoWrite(bestResults, chatID) {
+//   try {
+//     await mongoClient.connect();
+//     const findUser = await collection.find({ chatID: chatID }).toArray(); //find user
+//     //adding user to database
+//     const resp = await collection.updateOne(
+//       { score: findUser[0].score },
+//       { $set: { score: bestResults } }
+//     );
+//     console.log(resp);
+//   } catch (err) {
+//     console.log(err);
+//   } finally {
+//     await mongoClient.close();
+//   }
+// }
 function random(action) {
   if (!action) {
     let myArray = ["+", "-", "*", ":"];
@@ -265,19 +268,16 @@ function random(action) {
 // return result;
 //}
 async function start(ctx) {
-  ctx.replyWithMarkdown(
-    `Давай трохи пограємо?\nОбери варіант:`,
-    myKeyboard
-  );
+  ctx.replyWithMarkdown(`Давай трохи пограємо?\nОбери варіант:`, myKeyboard);
   cheat = 0;
   rightAnswers = 0;
   bestResults = 0;
   chatID = ctx.from.id;
-  mongo(ctx, bestResults,chatID).then(function (value) {
-    bestResults = value;
-    console.log("Async:", bestResults);
-  });
-  return bestResults
+  //   mongo(ctx, bestResults, chatID).then(function (value) {
+  //     bestResults = value;
+  //     console.log("ChatID", chatID, "Database results:", bestResults);
+  //   });
+  return bestResults;
 }
 //start button
 bot.command("/start", async (ctx) => {
@@ -311,23 +311,23 @@ bot.hears("Вихід", async (ctx) => {
 });
 bot.action("multi", (ctx) => {
   action = "*";
-  mixedKeyboard(ctx, action,chatID);
+  mixedKeyboard(ctx, action, chatID);
 });
 bot.action("sum", (ctx) => {
   action = "+";
-  mixedKeyboard(ctx, action,chatID);
+  mixedKeyboard(ctx, action, chatID);
 });
 bot.action("sub", (ctx) => {
   action = "-";
-  mixedKeyboard(ctx, action,chatID);
+  mixedKeyboard(ctx, action, chatID);
 });
 bot.action("div", (ctx) => {
   action = ":";
-  mixedKeyboard(ctx, action,chatID);
+  mixedKeyboard(ctx, action, chatID);
 });
 bot.action("impress", (ctx) => {
   action = random();
-  mixedKeyboard(ctx, action,chatID);
+  mixedKeyboard(ctx, action, chatID);
 });
 bot.action("exit", (ctx) => {
   ctx.reply("Гаразд! До зустрічі наступного разу!");
@@ -335,9 +335,18 @@ bot.action("exit", (ctx) => {
 bot.on("callback_query", async (ctx) => {
   callbackData = ctx.update.callback_query.data;
   chatID = ctx.from.id;
-  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData })
+  if (
+    ctx.db == undefined ||
+    ctx.db?.[chatID] == undefined ||
+    result == undefined
+  ) {
+    await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
+    start(ctx);
+    return;
+  }
+  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-   if (!rightAnswers) rightAnswers = 0;
+  if (!rightAnswers) rightAnswers = 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
@@ -346,17 +355,20 @@ bot.on("callback_query", async (ctx) => {
   //console.log("callback", callbackData);
   //console.log(ctx.result);
   // console.log(ctx.result[chatID]);
-  if (ctx.db[chatID].result == ctx.db[chatID].callbackData && ctx.db[chatID].rightAnswers < maxQuestions) {
+  if (
+    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
+    ctx.db[chatID].rightAnswers < maxQuestions
+  ) {
     await ctx.telegram.sendMessage(
       chatID,
       `Молодець! Дай правильну відповідь ще на ${
         maxQuestions - ctx.db[chatID].rightAnswers
       } питань і отримаєш приз!`
     );
-    rightAnswers=ctx.db[chatID].rightAnswers+1
-   // console.log('rightAnswers',rightAnswers);
+    rightAnswers = ctx.db[chatID].rightAnswers + 1;
+    // console.log('rightAnswers',rightAnswers);
     //rightAnswers++;
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers })
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
     if (ctx.update.callback_query.message.message_id + 1) {
       // setTimeout(
       //   () =>
@@ -372,9 +384,14 @@ bot.on("callback_query", async (ctx) => {
     ctx.db[chatID].rightAnswers >= maxQuestions
   ) {
     if (ctx.update.callback_query.message.message_id) {
-      bestResults++;
+      //bestResults++;
+      bestResults = ctx.db[chatID].bestResults + 1;
+      bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
+        bestResults,
+      });
       //console.log(`top`, bestResults);
-      mongoWrite(bestResults, chatID);
+
+      mongo(ctx, ctx.db[chatID].bestResults, chatID);
       // setTimeout(
       //   () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
       //   1000
@@ -394,13 +411,14 @@ bot.on("callback_query", async (ctx) => {
     } else if (data.status == "error") {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
-    ctx.reply(
-      "Наші найкращі гравці тут:\n"+siteUrl
-    );
+    ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
     start(ctx);
-  } else if (ctx.db[chatID].callbackData == "cheat" && ctx.db[chatID].rightAnswers > 0) {
-    rightAnswers=ctx.db[chatID].rightAnswers-2
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers })
+  } else if (
+    ctx.db[chatID].callbackData == "cheat" &&
+    ctx.db[chatID].rightAnswers > 0
+  ) {
+    rightAnswers = ctx.db[chatID].rightAnswers - 2;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
     cheat++;
     ctx.telegram.sendMessage(
       chatID,
@@ -413,7 +431,7 @@ bot.on("callback_query", async (ctx) => {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
     await ctx.reply(
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-      ctx.db[chatID].rightAnswers
+        ctx.db[chatID].rightAnswers
     );
     start(ctx);
   }
