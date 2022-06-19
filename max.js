@@ -181,14 +181,14 @@ function mixedKeyboard(ctx, action, chatID) {
       ],
     },
   };
-  if (!chatID) chatID = ctx.from.id;
+  chatID = chatID ?? ctx.from.id;
   if (!ctx.db)
     bot.context.db = { [chatID]: { result, rightAnswers, bestResults } };
   else
     bot.context.db = Object.assign(ctx.db, {
       [chatID]: { result, rightAnswers, bestResults },
     });
-  console.log(chatID);
+  //console.log(chatID);
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
@@ -200,7 +200,10 @@ function mixedKeyboard(ctx, action, chatID) {
   } else delete answerKeyboard.reply_markup.inline_keyboard[0][4];
   ctx.reply("Скільки буде " + a + action + b + "?", answerKeyboard);
   if (ctx.update.callback_query.message.message_id)
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
+    try {
+      //  console.log("first remove", ctx.update.callback_query.message.message_id);
+      ctx.deleteMessage(ctx.update.callback_query.message.message_id);
+    } catch (error) {}
   return answerKeyboard;
 }
 async function mongo(ctx, bestResults, chatID) {
@@ -268,7 +271,10 @@ function random(action) {
 // return result;
 //}
 async function start(ctx) {
-  ctx.replyWithMarkdown(`Давай трохи пограємо?\nОбери варіант:`, myKeyboard);
+  await ctx.replyWithMarkdown(
+    `Давай трохи пограємо?\nОбери варіант:`,
+    myKeyboard
+  );
   cheat = 0;
   rightAnswers = 0;
   bestResults = 0;
@@ -338,7 +344,8 @@ bot.on("callback_query", async (ctx) => {
   if (
     ctx.db == undefined ||
     ctx.db?.[chatID] == undefined ||
-    result == undefined
+    result == undefined ||
+    rightAnswers == undefined
   ) {
     await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
     start(ctx);
@@ -346,7 +353,7 @@ bot.on("callback_query", async (ctx) => {
   }
   bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-  if (!rightAnswers) rightAnswers = 0;
+  rightAnswers = rightAnswers ?? 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
@@ -369,13 +376,17 @@ bot.on("callback_query", async (ctx) => {
     // console.log('rightAnswers',rightAnswers);
     //rightAnswers++;
     bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
-    if (ctx.update.callback_query.message.message_id + 1) {
-      // setTimeout(
-      //   () =>
-      //     ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1),
-      //   3000
-      // );
-    }
+    // if (ctx.update.callback_query.message.message_id + 1) {
+    //   console.log(
+    //     "second remove:",
+    //     ctx.update.callback_query.message.message_id + 1
+    //   );
+    //   setTimeout(() => {
+    //     try {
+    //       ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1);
+    //     } catch (error) {}
+    //   }, 2000);
+    // }
     //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
     mixedKeyboard(ctx, random(action));
@@ -392,10 +403,13 @@ bot.on("callback_query", async (ctx) => {
       //console.log(`top`, bestResults);
 
       mongo(ctx, ctx.db[chatID].bestResults, chatID);
-      // setTimeout(
-      //   () => ctx.deleteMessage(ctx.update.callback_query.message.message_id),
-      //   1000
-      // );
+      try {
+        () =>
+          setTimeout(
+            ctx.deleteMessage(ctx.update.callback_query.message.message_id),
+            1000
+          );
+      } catch (error) {}
     }
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
