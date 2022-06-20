@@ -217,6 +217,10 @@ async function mongo(ctx, bestResults, chatID) {
         name: ctx.from.first_name,
         score: bestResults,
       };
+      ctx.telegram.sendMessage(
+        process.env.TELEGRAM_SEND,
+        `New user: ${user.name} with ChatID: ${user.chatID} added to database!`
+      );
       const resp = await collection.insertOne(user); //add user
       //console.log(`user added to database`, resp);
     }
