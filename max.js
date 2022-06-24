@@ -292,7 +292,7 @@ async function start(ctx) {
 //start button
 bot.command("/start", async (ctx) => {
   let helloMessage = "Доброго ранку";
-  const hour = new Date().getHours();
+  const hour = new Date().getHours() + 3;
   console.log(hour);
   if (hour > 17) {
     helloMessage = "Добрий вечір";
