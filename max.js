@@ -292,8 +292,8 @@ async function start(ctx) {
 //start button
 bot.command("/start", async (ctx) => {
   let helloMessage = "Доброго ранку";
-  const hour = new Date().getHours() + 3;
-  console.log(hour);
+  const hour = new Date().getHours() + 3; //my timezone+3 for Heroku
+  // console.log(hour);
   if (hour > 17) {
     helloMessage = "Добрий вечір";
   } else if (hour > 12) {
