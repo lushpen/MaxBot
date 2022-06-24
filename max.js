@@ -2,10 +2,8 @@ require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
 let siteUrl = `https://maxbotsite.herokuapp.com/`;
-let result, rightAnswers, chatID;
+let result, rightAnswers, cheat, bestResults, chatID;
 let maxQuestions = 9;
-let bestResults = 0;
-let cheat=0;
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
 const url = process.env.MONGODB_URI;
 // const url = "mongodb://localhost:27017/";
@@ -68,7 +66,6 @@ const myKeyboard = {
     ],
   },
 };
-
 function mixedKeyboard(ctx, action, chatID) {
   do {
     switch (action) {
@@ -284,7 +281,7 @@ async function start(ctx) {
   );
   cheat = 0;
   rightAnswers = 0;
-  // bestResults = 0;
+  bestResults = 0;
   chatID = ctx.from.id;
   //   mongo(ctx, bestResults, chatID).then(function (value) {
   //     bestResults = value;
@@ -294,8 +291,16 @@ async function start(ctx) {
 }
 //start button
 bot.command("/start", async (ctx) => {
+  let helloMessage = "Доброго ранку";
+  const hour = new Date().getHours();
+  console.log(hour);
+  if (hour > 17) {
+    helloMessage = "Добрий вечір";
+  } else if (hour > 12) {
+    helloMessage = "Добрий день";
+  }
   await ctx.reply(
-    `Вітаю, ${ctx.from.first_name}!`,
+    `${helloMessage}, ${ctx.from.first_name}!`,
     Markup.keyboard([["Почали"], ["Найкращі гравці"], ["Вихід"]])
       .oneTime()
       .resize()
@@ -350,19 +355,17 @@ bot.on("callback_query", async (ctx) => {
   chatID = ctx.from.id;
   if (
     ctx.db == undefined ||
-    ctx.db?.[chatID] == undefined 
-    // ||
-    // result == undefined ||
-    // rightAnswers == undefined
+    ctx.db?.[chatID] == undefined ||
+    result == undefined ||
+    rightAnswers == undefined
   ) {
     await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
-    // console.log("CTX:",ctx.db,"Result:",result, "RightAnswers:",rightAnswers)
     start(ctx);
     return;
   }
   bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-  bot.context.db[chatID].rightAnswers = ctx.db[chatID].rightAnswers ?? 0;
+  rightAnswers = rightAnswers ?? 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
@@ -371,7 +374,6 @@ bot.on("callback_query", async (ctx) => {
   //console.log("callback", callbackData);
   //console.log(ctx.result);
   // console.log(ctx.result[chatID]);
-  // console.log("CTX:",ctx.db,"Result:",result, "RightAnswers:",rightAnswers)
   if (
     ctx.db[chatID].result == ctx.db[chatID].callbackData &&
     ctx.db[chatID].rightAnswers < maxQuestions
