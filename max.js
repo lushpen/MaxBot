@@ -4,15 +4,15 @@ const { Telegraf, Markup } = require("telegraf");
 let siteUrl = `https://maxbotsite.herokuapp.com/`;
 let result, rightAnswers, cheat, bestResults, chatID;
 let maxQuestions = 9;
-// const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
-// const url = process.env.MONGODB_URI;
-const url = "mongodb://localhost:27017/";
-const HttpsProxyAgent = require("https-proxy-agent");
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
-  {
-    telegram:
-      { agent: new HttpsProxyAgent(process.env.Proxy) }
-  }, { polling: true });
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN, { polling: true });
+const url = process.env.MONGODB_URI;
+// const url = "mongodb://localhost:27017/";
+// const HttpsProxyAgent = require("https-proxy-agent");
+// const bot = new Telegraf(process.env.TELEGRAM_TOKEN,
+//   {
+//     telegram:
+//       { agent: new HttpsProxyAgent(process.env.Proxy) }
+//   }, { polling: true });
 
 const MongoClient = require("mongodb").MongoClient;
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
@@ -204,7 +204,7 @@ function mixedKeyboard(ctx, action, chatID) {
       //  console.log("first remove", ctx.update.callback_query.message.message_id);
       ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     } catch (error) {}
-  return answerKeyboard;
+  return result
 }
 async function mongo(ctx, bestResults, chatID) {
   try {
@@ -291,8 +291,16 @@ async function start(ctx) {
 }
 //start button
 bot.command("/start", async (ctx) => {
+  let helloMessage = "Доброго ранку";
+  const hour = new Date().getHours() + 3; //my timezone+3 for Heroku
+  // console.log(hour);
+  if (hour > 17) {
+    helloMessage = "Добрий вечір";
+  } else if (hour > 12) {
+    helloMessage = "Добрий день";
+  }
   await ctx.reply(
-    `Вітаю, ${ctx.from.first_name}!`,
+    `${helloMessage}, ${ctx.from.first_name}!`,
     Markup.keyboard([["Почали"], ["Найкращі гравці"], ["Вихід"]])
       .oneTime()
       .resize()
@@ -345,8 +353,6 @@ bot.action("exit", (ctx) => {
 bot.on("callback_query", async (ctx) => {
   callbackData = ctx.update.callback_query.data;
   chatID = ctx.from.id;
-  messageID=ctx.update.callback_query.message.message_id
-  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData },{messageID})
   if (
     ctx.db == undefined ||
     ctx.db?.[chatID] == undefined ||
@@ -359,7 +365,7 @@ bot.on("callback_query", async (ctx) => {
   }
   bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-  rightAnswers = rightAnswers ?? 0;
+  bot.context.db[chatID].rightAnswers = ctx.db[chatID].rightAnswers ?? 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
@@ -420,10 +426,10 @@ bot.on("callback_query", async (ctx) => {
     ctx.reply(
       `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
     );
-    const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-     agent: new HttpsProxyAgent(process.env.Proxy),
-    });
-    // const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //  agent: new HttpsProxyAgent(process.env.Proxy),
+    // });
+     const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
@@ -443,9 +449,9 @@ bot.on("callback_query", async (ctx) => {
     ctx.telegram.sendMessage(
       chatID,
       "Натисни: " +
-        result +
+      ctx.db[chatID].result +
         "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-        ctx.db[chatID].rightAnswers
+    (maxQuestions - ctx.db[chatID].rightAnswers)
     );
   } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
