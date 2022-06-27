@@ -451,7 +451,7 @@ bot.on("callback_query", async (ctx) => {
       "Натисни: " +
         result +
         "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-        ctx.db[chatID].rightAnswers
+        maxQuestions - ctx.db[chatID].rightAnswers
     );
   } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
