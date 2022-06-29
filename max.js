@@ -67,6 +67,7 @@ const myKeyboard = {
   },
 };
 function mixedKeyboard(ctx, action, chatID) {
+  // console.log(chatID, " in mixed keyboard");
   do {
     switch (action) {
       case "*":
@@ -181,7 +182,7 @@ function mixedKeyboard(ctx, action, chatID) {
       ],
     },
   };
-  chatID = chatID ?? ctx.from.id;
+  chatID = ctx.from.id;
   if (!ctx.db)
     bot.context.db = { [chatID]: { result, rightAnswers, bestResults } };
   else
@@ -204,7 +205,7 @@ function mixedKeyboard(ctx, action, chatID) {
       //  console.log("first remove", ctx.update.callback_query.message.message_id);
       ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     } catch (error) {}
-  return result
+  return;
 }
 async function mongo(ctx, bestResults, chatID) {
   try {
@@ -274,7 +275,7 @@ function random(action) {
 //userID = { ID: ctx.from.id, result: result };
 // return result;
 //}
-async function start(ctx) {
+async function start(ctx, chatID) {
   await ctx.replyWithMarkdown(
     `Давай трохи пограємо?\nОбери варіант:`,
     myKeyboard
@@ -283,11 +284,12 @@ async function start(ctx) {
   rightAnswers = 0;
   bestResults = 0;
   chatID = ctx.from.id;
+  // console.log(chatID);
   //   mongo(ctx, bestResults, chatID).then(function (value) {
   //     bestResults = value;
   //     console.log("ChatID", chatID, "Database results:", bestResults);
   //   });
-  return bestResults;
+  return;
 }
 //start button
 bot.command("/start", async (ctx) => {
@@ -365,7 +367,7 @@ bot.on("callback_query", async (ctx) => {
   }
   bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-  bot.context.db[chatID].rightAnswers = ctx.db[chatID].rightAnswers ?? 0;
+  rightAnswers = rightAnswers ?? 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
@@ -401,7 +403,7 @@ bot.on("callback_query", async (ctx) => {
     // }
     //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
-    mixedKeyboard(ctx, random(action));
+    mixedKeyboard(ctx, random(action), chatID);
   } else if (
     ctx.db[chatID].result == ctx.db[chatID].callbackData &&
     ctx.db[chatID].rightAnswers >= maxQuestions
@@ -429,7 +431,7 @@ bot.on("callback_query", async (ctx) => {
     // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
     //  agent: new HttpsProxyAgent(process.env.Proxy),
     // });
-     const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    const response = await fetch("https://dog.ceo/api/breeds/image/random");
     const data = await response.json();
     if (data.status == "success") {
       await ctx.replyWithPhoto(data.message);
@@ -438,7 +440,7 @@ bot.on("callback_query", async (ctx) => {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
     ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
-    start(ctx);
+    start(ctx, chatID);
   } else if (
     ctx.db[chatID].callbackData == "cheat" &&
     ctx.db[chatID].rightAnswers > 0
@@ -446,12 +448,11 @@ bot.on("callback_query", async (ctx) => {
     rightAnswers = ctx.db[chatID].rightAnswers - 2;
     bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
     cheat++;
-    ctx.telegram.sendMessage(
-      chatID,
+    ctx.reply(
       "Натисни: " +
-      ctx.db[chatID].result +
+        ctx.db[chatID].result +
         "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-    (maxQuestions - ctx.db[chatID].rightAnswers)
+        (maxQuestions - ctx.db[chatID].rightAnswers)
     );
   } else {
     await ctx.replyWithAudio({ source: "./lost.mp3" });
@@ -459,7 +460,7 @@ bot.on("callback_query", async (ctx) => {
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
         ctx.db[chatID].rightAnswers
     );
-    start(ctx);
+    start(ctx, chatID);
   }
 });
 bot.catch((err, ctx) => {
