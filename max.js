@@ -193,7 +193,7 @@ function mixedKeyboard(ctx, action, chatID) {
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
-  if (rightAnswers >= 2) {
+  if (ctx.db?.[chatID].rightAnswers >= 2) {
     answerKeyboard.reply_markup.inline_keyboard[0][4] = {
       text: "?",
       callback_data: "cheat",
@@ -367,7 +367,7 @@ bot.on("callback_query", async (ctx) => {
   }
   bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
   console.log(ctx.db);
-  rightAnswers = rightAnswers ?? 0;
+  // rightAnswers = rightAnswers ?? 0;
   //bot.context.result = { [chatID]: [result] };
   //console.log("callback_object", ctx.result);
   //console.log(ctx);
