@@ -184,12 +184,12 @@ function mixedKeyboard(ctx, action, chatID) {
   };
   chatID = ctx.from.id;
   if (!ctx.db)
-    bot.context.db = { [chatID]: { result, rightAnswers, bestResults } };
+    bot.context.db = { [chatID]: { result, rightAnswers, action } };
   else
     bot.context.db = Object.assign(ctx.db, {
-      [chatID]: { result, rightAnswers, bestResults },
+      [chatID]: { result, rightAnswers, action },
     });
-  //console.log(chatID);
+  console.log(chatID);
   answerKeyboard.reply_markup.inline_keyboard[0][
     Math.floor(Math.random() * 4)
   ] = { text: result, callback_data: result };
@@ -403,7 +403,7 @@ bot.on("callback_query", async (ctx) => {
     // }
     //повторний запуск тесту;
     //для запуску з рендомними питаннями math(ctx, random())
-    mixedKeyboard(ctx, random(action), chatID);
+    mixedKeyboard(ctx, random(ctx.db[chatID].action), chatID);
   } else if (
     ctx.db[chatID].result == ctx.db[chatID].callbackData &&
     ctx.db[chatID].rightAnswers >= maxQuestions
@@ -460,6 +460,10 @@ bot.on("callback_query", async (ctx) => {
       "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
         ctx.db[chatID].rightAnswers
     );
+        rightAnswers = 0
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
+      rightAnswers,
+    });
     start(ctx, chatID);
   }
 });
