@@ -415,7 +415,7 @@ bot.on("callback_query", async (ctx) => {
       bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
         bestResults,
       });
-      //console.log(`top`, bestResults);
+      console.log(`top`, bestResults);
 
       mongo(ctx, ctx.db[chatID].bestResults, chatID);
       try {
