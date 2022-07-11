@@ -444,6 +444,7 @@ bot.on("callback_query", async (ctx) => {
       await ctx.reply("Вибач, песика знайти не вдалося :(");
     }
     ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
+    rightAnswers = 0;
     start(ctx, chatID);
   } else if (
     ctx.db[chatID].callbackData == "cheat" &&
