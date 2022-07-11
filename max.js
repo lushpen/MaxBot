@@ -445,6 +445,7 @@ bot.on("callback_query", async (ctx) => {
     }
     ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
     rightAnswers = 0;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers }); //анулення для відсутності можливості натискання останньої правильної відповіді і отримання перемоги
     start(ctx, chatID);
   } else if (
     ctx.db[chatID].callbackData == "cheat" &&
