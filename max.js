@@ -410,8 +410,10 @@ bot.on("callback_query", async (ctx) => {
   ) {
     if (ctx.update.callback_query.message.message_id) {
       //bestResults++;
-      bot.context.db[chatID]=ctx.db[chatID].bestResults ?? 0; // fix for NAN for new users
-      console.log(ctx.db[chatID].bestResults);
+      bestResults = bestResults ?? 0; // fix for NAN for new users
+      console.log(bestResults);
+      ctx.db[chatID].bestResults = ctx.db[chatID].bestResults??0;
+      console.log("ctx.db: ",ctx.db[chatID].bestResults);
       bestResults = ctx.db[chatID].bestResults + 1;
       bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
         bestResults,
