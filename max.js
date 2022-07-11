@@ -411,6 +411,7 @@ bot.on("callback_query", async (ctx) => {
     if (ctx.update.callback_query.message.message_id) {
       //bestResults++;
       bestResults = bestResults ?? 0; // fix for NAN for new users
+      console.log(bestResults);
       bestResults = ctx.db[chatID].bestResults + 1;
       bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
         bestResults,
