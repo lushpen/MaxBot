@@ -1,6 +1,7 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const { Telegraf, Markup } = require("telegraf");
+let telegramUrl = `https://web.telegram.org/z/#1136060422`;
 let siteUrl = `https://maxbotsite.herokuapp.com/`;
 let result, rightAnswers, cheat, bestResults, chatID;
 let maxQuestions = 9;
@@ -18,6 +19,7 @@ const MongoClient = require("mongodb").MongoClient;
 const mongoClient = new MongoClient(url, { useUnifiedTopology: true });
 const db = mongoClient.db("usersdb");
 const collection = db.collection("users");
+
 const myKeyboard = {
   reply_markup: {
     inline_keyboard: [
@@ -63,9 +65,214 @@ const myKeyboard = {
           url: siteUrl,
         },
       ],
+      [
+        {
+          text: "Написати розробнику",
+          url: telegramUrl,
+        },
+      ],
     ],
   },
 };
+
+//start button
+bot.command("/start", async (ctx) => {
+  // Sending message to лирика
+  // ctx.telegram.sendMessage(
+  //   5416858404,
+  //   `Привіт! Це тестова версія бота, краще використовуй цю: @lushpen_bot`
+  // );
+  let helloMessage = "Доброго ранку";
+  const hour = new Date().getHours() + 3; //my timezone+3 for Heroku
+  // console.log(hour);
+  if (hour > 17) {
+    helloMessage = "Добрий вечір";
+  } else if (hour > 12) {
+    helloMessage = "Добрий день";
+  }
+  await ctx.reply(
+    `${helloMessage}, ${ctx.from.first_name}!`,
+    Markup.keyboard([["Почали"], ["Найкращі гравці"], ["Вихід"]])
+      .oneTime()
+      .resize()
+  );
+});
+
+//Scores
+bot.hears("Написати розробнику", (ctx) => {
+  ctx.reply(telegramUrl);
+});
+
+//Scores
+bot.hears("Найкращі гравці", (ctx) => {
+  ctx.reply(siteUrl);
+});
+
+//start
+bot.hears("Почали", async (ctx) => {
+  await ctx.reply(
+    `Готовий практикуватися у математиці?\nПравила прості: \n${
+      maxQuestions + 1
+    } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${
+      maxQuestions + 1
+    } питань отримаєш приз!`
+  );
+  start(ctx);
+});
+
+//exit button action
+bot.hears("Вихід", async (ctx) => {
+  ctx.reply("Гаразд! До зустрічі наступного разу!");
+});
+bot.action("multi", (ctx) => {
+  action = "*";
+  mixedKeyboard(ctx, action, chatID);
+});
+bot.action("sum", (ctx) => {
+  action = "+";
+  mixedKeyboard(ctx, action, chatID);
+});
+bot.action("sub", (ctx) => {
+  action = "-";
+  mixedKeyboard(ctx, action, chatID);
+});
+bot.action("div", (ctx) => {
+  action = ":";
+  mixedKeyboard(ctx, action, chatID);
+});
+bot.action("impress", (ctx) => {
+  action = random();
+  mixedKeyboard(ctx, action, chatID);
+});
+bot.action("exit", (ctx) => {
+  ctx.reply("Гаразд! До зустрічі наступного разу!");
+});
+bot.on("callback_query", async (ctx) => {
+  callbackData = ctx.update.callback_query.data;
+  chatID = ctx.from.id;
+  if (
+    ctx.db == undefined ||
+    ctx.db?.[chatID] == undefined ||
+    result == undefined ||
+    rightAnswers == undefined
+  ) {
+    await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
+    start(ctx);
+    return;
+  }
+  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
+  console.log(ctx.db);
+  // rightAnswers = rightAnswers ?? 0;
+  //bot.context.result = { [chatID]: [result] };
+  //console.log("callback_object", ctx.result);
+  //console.log(ctx);
+  // console.log(ctx.result);
+  //console.log(result, callbackData, ctx.from.id);
+  //console.log("callback", callbackData);
+  //console.log(ctx.result);
+  // console.log(ctx.result[chatID]);
+  if (
+    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
+    ctx.db[chatID].rightAnswers < maxQuestions
+  ) {
+    await ctx.telegram.sendMessage(
+      chatID,
+      `Молодець! Дай правильну відповідь ще на ${
+        maxQuestions - ctx.db[chatID].rightAnswers
+      } питань і отримаєш приз!`
+    );
+    rightAnswers = ctx.db[chatID].rightAnswers + 1;
+    // console.log('rightAnswers',rightAnswers);
+    //rightAnswers++;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
+    // if (ctx.update.callback_query.message.message_id + 1) {
+    //   console.log(
+    //     "second remove:",
+    //     ctx.update.callback_query.message.message_id + 1
+    //   );
+    //   setTimeout(() => {
+    //     try {
+    //       ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1);
+    //     } catch (error) {}
+    //   }, 2000);
+    // }
+    //повторний запуск тесту;
+    //для запуску з рендомними питаннями math(ctx, random())
+    mixedKeyboard(ctx, random(ctx.db[chatID].action), chatID);
+  } else if (
+    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
+    ctx.db[chatID].rightAnswers >= maxQuestions
+  ) {
+    if (ctx.update.callback_query.message.message_id) {
+      //bestResults++;
+      bestResults = bestResults ?? 0; // fix for NAN for new users
+      console.log(bestResults);
+      ctx.db[chatID].bestResults = ctx.db[chatID].bestResults ?? 0;
+      // console.log("ctx.db: ",ctx.db[chatID].bestResults);
+      bestResults = ctx.db[chatID].bestResults + 1;
+      bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
+        bestResults,
+      });
+      // console.log(`top`, bestResults);
+      mongo(ctx, ctx.db[chatID].bestResults, chatID);
+      try {
+        () =>
+          setTimeout(
+            ctx.deleteMessage(ctx.update.callback_query.message.message_id),
+            1000
+          );
+      } catch (error) {}
+    }
+    ctx.reply(
+      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
+    );
+    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
+    //  agent: new HttpsProxyAgent(process.env.Proxy),
+    // });
+    const response = await fetch("https://dog.ceo/api/breeds/image/random");
+    const data = await response.json();
+    if (data.status == "success") {
+      await ctx.replyWithPhoto(data.message);
+      await ctx.replyWithAudio({ source: "./victory.mp3" });
+    } else if (data.status == "error") {
+      await ctx.reply("Вибач, песика знайти не вдалося :(");
+    }
+    ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
+    rightAnswers = 0;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers }); //анулення для відсутності можливості натискання останньої правильної відповіді і отримання перемоги
+    start(ctx, chatID);
+  } else if (
+    ctx.db[chatID].callbackData == "cheat" &&
+    ctx.db[chatID].rightAnswers > 0
+  ) {
+    rightAnswers = ctx.db[chatID].rightAnswers - 2;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
+    cheat++;
+    ctx.reply(
+      "Натисни: " +
+        ctx.db[chatID].result +
+        "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
+        (maxQuestions - ctx.db[chatID].rightAnswers)
+    );
+  } else {
+    await ctx.replyWithAudio({ source: "./lost.mp3" });
+    await ctx.reply(
+      "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
+        ctx.db[chatID].rightAnswers
+    );
+    rightAnswers = 0;
+    bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
+      rightAnswers,
+    });
+    start(ctx, chatID);
+  }
+});
+bot.catch((err, ctx) => {
+  console.log(`Ох-охо-xo, сталося щось жаахливе: ${ctx.updateType}`, err);
+});
+bot.on("text", (ctx) => {
+  return ctx.reply(ctx.message.text);
+});
 function mixedKeyboard(ctx, action, chatID) {
   // console.log(chatID, " in mixed keyboard");
   do {
@@ -183,8 +390,7 @@ function mixedKeyboard(ctx, action, chatID) {
     },
   };
   chatID = ctx.from.id;
-  if (!ctx.db)
-    bot.context.db = { [chatID]: { result, rightAnswers, action } };
+  if (!ctx.db) bot.context.db = { [chatID]: { result, rightAnswers, action } };
   else
     bot.context.db = Object.assign(ctx.db, {
       [chatID]: { result, rightAnswers, action },
@@ -291,190 +497,6 @@ async function start(ctx, chatID) {
   //   });
   return;
 }
-//start button
-bot.command("/start", async (ctx) => {
-  let helloMessage = "Доброго ранку";
-  const hour = new Date().getHours() + 3; //my timezone+3 for Heroku
-  // console.log(hour);
-  if (hour > 17) {
-    helloMessage = "Добрий вечір";
-  } else if (hour > 12) {
-    helloMessage = "Добрий день";
-  }
-  await ctx.reply(
-    `${helloMessage}, ${ctx.from.first_name}!`,
-    Markup.keyboard([["Почали"], ["Найкращі гравці"], ["Вихід"]])
-      .oneTime()
-      .resize()
-  );
-});
-//Scores
-bot.hears("Найкращі гравці", (ctx) => {
-  ctx.reply(siteUrl);
-});
-
-//start
-bot.hears("Почали", async (ctx) => {
-  await ctx.reply(
-    `Готовий практикуватися у математиці?\nПравила прості: \n${
-      maxQuestions + 1
-    } прикладів і декілька підказок.\nКожна правильна відповідь додає 1 бал.\nКожна підказка знімає 2 бали.\nДаси відповідь на всі ${
-      maxQuestions + 1
-    } питань отримаєш приз!`
-  );
-  start(ctx);
-});
-
-//exit button action
-bot.hears("Вихід", async (ctx) => {
-  ctx.reply("Гаразд! До зустрічі наступного разу!");
-});
-bot.action("multi", (ctx) => {
-  action = "*";
-  mixedKeyboard(ctx, action, chatID);
-});
-bot.action("sum", (ctx) => {
-  action = "+";
-  mixedKeyboard(ctx, action, chatID);
-});
-bot.action("sub", (ctx) => {
-  action = "-";
-  mixedKeyboard(ctx, action, chatID);
-});
-bot.action("div", (ctx) => {
-  action = ":";
-  mixedKeyboard(ctx, action, chatID);
-});
-bot.action("impress", (ctx) => {
-  action = random();
-  mixedKeyboard(ctx, action, chatID);
-});
-bot.action("exit", (ctx) => {
-  ctx.reply("Гаразд! До зустрічі наступного разу!");
-});
-bot.on("callback_query", async (ctx) => {
-  callbackData = ctx.update.callback_query.data;
-  chatID = ctx.from.id;
-  if (
-    ctx.db == undefined ||
-    ctx.db?.[chatID] == undefined ||
-    result == undefined ||
-    rightAnswers == undefined
-  ) {
-    await ctx.telegram.sendMessage(chatID, `Сталася помилка, давай спочатку`);
-    start(ctx);
-    return;
-  }
-  bot.context.db[chatID] = Object.assign(ctx.db[chatID], { callbackData });
-  console.log(ctx.db);
-  // rightAnswers = rightAnswers ?? 0;
-  //bot.context.result = { [chatID]: [result] };
-  //console.log("callback_object", ctx.result);
-  //console.log(ctx);
-  // console.log(ctx.result);
-  //console.log(result, callbackData, ctx.from.id);
-  //console.log("callback", callbackData);
-  //console.log(ctx.result);
-  // console.log(ctx.result[chatID]);
-  if (
-    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
-    ctx.db[chatID].rightAnswers < maxQuestions
-  ) {
-    await ctx.telegram.sendMessage(
-      chatID,
-      `Молодець! Дай правильну відповідь ще на ${
-        maxQuestions - ctx.db[chatID].rightAnswers
-      } питань і отримаєш приз!`
-    );
-    rightAnswers = ctx.db[chatID].rightAnswers + 1;
-    // console.log('rightAnswers',rightAnswers);
-    //rightAnswers++;
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
-    // if (ctx.update.callback_query.message.message_id + 1) {
-    //   console.log(
-    //     "second remove:",
-    //     ctx.update.callback_query.message.message_id + 1
-    //   );
-    //   setTimeout(() => {
-    //     try {
-    //       ctx.deleteMessage(ctx.update.callback_query.message.message_id + 1);
-    //     } catch (error) {}
-    //   }, 2000);
-    // }
-    //повторний запуск тесту;
-    //для запуску з рендомними питаннями math(ctx, random())
-    mixedKeyboard(ctx, random(ctx.db[chatID].action), chatID);
-  } else if (
-    ctx.db[chatID].result == ctx.db[chatID].callbackData &&
-    ctx.db[chatID].rightAnswers >= maxQuestions
-  ) {
-    if (ctx.update.callback_query.message.message_id) {
-      //bestResults++;
-      bestResults = bestResults ?? 0; // fix for NAN for new users
-      console.log(bestResults);
-      ctx.db[chatID].bestResults = ctx.db[chatID].bestResults??0;
-      // console.log("ctx.db: ",ctx.db[chatID].bestResults);
-      bestResults = ctx.db[chatID].bestResults + 1;
-      bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
-        bestResults,
-      });
-      // console.log(`top`, bestResults);
-      mongo(ctx, ctx.db[chatID].bestResults, chatID);
-      try {
-        () =>
-          setTimeout(
-            ctx.deleteMessage(ctx.update.callback_query.message.message_id),
-            1000
-          );
-      } catch (error) {}
-    }
-    ctx.reply(
-      `Молодець! Ти дуже гарно знаєш таблицю!!!\nПідказок використано: ${cheat}\nТримай фото песика:)`
-    );
-    // const response = await fetch("https://dog.ceo/api/breeds/image/random", {
-    //  agent: new HttpsProxyAgent(process.env.Proxy),
-    // });
-    const response = await fetch("https://dog.ceo/api/breeds/image/random");
-    const data = await response.json();
-    if (data.status == "success") {
-      await ctx.replyWithPhoto(data.message);
-      await ctx.replyWithAudio({ source: "./victory.mp3" });
-    } else if (data.status == "error") {
-      await ctx.reply("Вибач, песика знайти не вдалося :(");
-    }
-    ctx.reply("Наші найкращі гравці тут:\n" + siteUrl);
-    rightAnswers = 0;
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers }); //анулення для відсутності можливості натискання останньої правильної відповіді і отримання перемоги
-    start(ctx, chatID);
-  } else if (
-    ctx.db[chatID].callbackData == "cheat" &&
-    ctx.db[chatID].rightAnswers > 0
-  ) {
-    rightAnswers = ctx.db[chatID].rightAnswers - 2;
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], { rightAnswers });
-    cheat++;
-    ctx.reply(
-      "Натисни: " +
-        ctx.db[chatID].result +
-        "\nКількість правильних відповідей зменшилася на 2.\nЛишилося ще: " +
-        (maxQuestions - ctx.db[chatID].rightAnswers)
-    );
-  } else {
-    await ctx.replyWithAudio({ source: "./lost.mp3" });
-    await ctx.reply(
-      "Нажаль, не вірно:(. Старайся краще наступного разу!\nВірних відповідей: " +
-        ctx.db[chatID].rightAnswers
-    );
-        rightAnswers = 0
-    bot.context.db[chatID] = Object.assign(ctx.db[chatID], {
-      rightAnswers,
-    });
-    start(ctx, chatID);
-  }
-});
-bot.catch((err, ctx) => {
-  console.log(`Ох-охо-xo, сталося щось жаахливе: ${ctx.updateType}`, err);
-});
 
 // Запуск бота
 bot.launch();
